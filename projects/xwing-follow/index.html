@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X-Wing Path Following — Joey Campion</title>
+<link rel="stylesheet" href="/style.css">
+<meta name="description" content="An interactive demo of Beard &amp; McLain vector-field guidance: an X-wing flies to your cursor, then orbits it.">
+<link rel="canonical" href="https://joeycampion.com/projects/xwing-follow/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Joey Campion">
+<meta property="og:title" content="X-Wing Path Following — Joey Campion">
+<meta property="og:description" content="An interactive demo of Beard &amp; McLain vector-field guidance: an X-wing flies to your cursor, then orbits it.">
+<meta property="og:url" content="https://joeycampion.com/projects/xwing-follow/">
+<meta property="og:image" content="https://joeycampion.com/images/life-portrait.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/images/xwing.svg" type="image/svg+xml">
+<script src="/site.js" defer></script>
+<script type="module" src="./demo.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="site-name" href="/">Joey Campion</a>
+  <nav><a href="/">Life</a><a href="/work">Work</a><a href="/school">School</a><a href="/projects" aria-current="page">Projects</a><a href="/essays">Essays</a><a href="/resume.pdf">Resume</a></nav>
+</div></header>
+
+<main>
+  <div class="wrap">
+    <h1>X-Wing Path Following</h1>
+    <p class="lede">Move your cursor (or tap) and the X-wing flies to it, then orbits. The guidance is the vector-field path following from Beard &amp; McLain’s <em>Small Unmanned Aircraft</em>.</p>
+  </div>
+
+  <div class="sim-stage">
+    <canvas id="sim" aria-label="Top-down simulation of an X-wing flying to and orbiting the cursor"></canvas>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <h2>What’s going on</h2>
+      <p>The X-wing is a kinematic model: constant airspeed <i>V<sub>a</sub></i>, and it can only change course by banking. A course loop commands a bank angle, and a second-order roll loop (with a roll-rate limit) chases it:</p>
+      <p class="eq">φ<sub>c</sub> = sat(k<sub>χ</sub>(χ<sub>c</sub> − χ)), &nbsp; χ̇ = (g / V<sub>a</sub>) tan φ</p>
+      <p>Seen from above, banking foreshortens the wings, which is why the X-wing looks narrower in a turn.</p>
+
+      <h3>Straight-line following</h3>
+      <p>Far from the cursor, it follows the dashed line from where it started chasing to the cursor. The commanded course bends toward the line in proportion to the cross-track error <i>e<sub>py</sub></i>, saturating at χ<sub>∞</sub>:</p>
+      <p class="eq">χ<sub>c</sub> = χ<sub>q</sub> − χ<sub>∞</sub> (2/π) tan<sup>−1</sup>(k<sub>path</sub> e<sub>py</sub>)</p>
+
+      <h3>Orbit following</h3>
+      <p>Close to the cursor, it switches to a circular orbit of radius <i>R</i>, turning whichever way it’s already headed:</p>
+      <p class="eq">χ<sub>c</sub> = φ + λ (π/2 + tan<sup>−1</sup>(k<sub>orbit</sub> (ρ − R) / R))</p>
+      <p>It enters the orbit inside 2<i>R</i> and only leaves past 4<i>R</i>, so a cursor hovering near the boundary doesn’t make it flip back and forth.</p>
+
+      <h3>Numbers</h3>
+      <p>V<sub>a</sub> = 25 m/s, R = 120 m, χ<sub>∞</sub> = 70°, k<sub>path</sub> = 0.02, k<sub>orbit</sub> = 5, φ<sub>max</sub> = 35°, roll loop ω<sub>n</sub> = 3 rad/s and ζ = 0.7. The sim runs at 100 Hz and four times faster than real time.</p>
+      <p class="meta">Reference: R. W. Beard and T. W. McLain, <em>Small Unmanned Aircraft: Theory and Practice</em>, Princeton University Press, 2012, ch. 10.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="wrap">
+  <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li></ul>
+  <p>© Joey Campion</p>
+</div></footer>
+</body>
+</html>
