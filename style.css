@@ -65,7 +65,6 @@ main { padding: 2rem 0 4rem; }
 
 .lede { font-size: 1.25rem; color: var(--muted); margin-top: 0; }
 
-.hero { margin: 0 0 2rem; }
 .portrait { width: 16rem; margin: 0 0 1.5rem; }
 
 .section { margin-top: 3.5rem; padding-top: 0.5rem; }
@@ -89,7 +88,22 @@ main { padding: 2rem 0 4rem; }
 .essay-nav a { text-decoration: none; }
 .essay-nav span { display: block; color: var(--muted); font-size: 0.85rem; }
 
+.sim-stage { margin: 1.5rem auto 0; max-width: 72rem; padding: 0 16px; }
+.sim-stage canvas {
+  width: 100%;
+  height: min(70vh, 40rem);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.eq { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.1rem; text-align: center; margin: 1.25rem 0; overflow-x: auto; }
+
 blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--line); color: var(--muted); }
 
 .site-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .site-footer .wrap { padding-top: 1.5rem; padding-bottom: 2rem; }
+.site-footer .links { margin: 0 0 0.5rem; }
+.site-footer p { margin: 0; }
