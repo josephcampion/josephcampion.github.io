@@ -22,6 +22,7 @@ function readColors() {
 }
 readColors();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+document.addEventListener('themechange', readColors);
 
 function resize() {
   const dpr = window.devicePixelRatio || 1;
