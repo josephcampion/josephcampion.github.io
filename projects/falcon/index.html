@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Millennium Falcon: Turbojet to Ramjet — Joey Campion</title>
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="/style.css">
+<meta name="description" content="An interactive propulsion demo: click to set a target Mach and a freighter accelerates on an afterburning turbojet, then hands its inlet over to a ramjet between Mach 2 and 3.">
+<link rel="canonical" href="https://joeycampion.com/projects/falcon/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Joey Campion">
+<meta property="og:title" content="Millennium Falcon: Turbojet to Ramjet — Joey Campion">
+<meta property="og:description" content="An interactive propulsion demo: click to set a target Mach and a freighter accelerates on an afterburning turbojet, then hands its inlet over to a ramjet between Mach 2 and 3.">
+<meta property="og:url" content="https://joeycampion.com/projects/falcon/">
+<meta property="og:image" content="https://joeycampion.com/images/life-portrait.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/images/xwing.svg" type="image/svg+xml">
+<script src="/site.js" defer></script>
+<script type="module" src="./demo.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="site-name" href="/">Joey Campion</a>
+  <nav><a href="/work">Work</a><a href="/projects" aria-current="page">Projects</a><a href="/school">School</a><a href="/essays">Essays</a><a href="/life">Life</a><a href="/resume.pdf">Resume</a></nav>
+</div></header>
+
+<main>
+  <div class="wrap">
+    <p class="kicker">Mini demo · Propulsion</p>
+    <h1>Millennium Falcon: Turbojet to Ramjet</h1>
+    <p class="lede">Click (or tap) anywhere to set a target Mach number; left is slow, right is fast, lined up with the chart along the bottom. The freighter lights its afterburner, climbs as it speeds up, and somewhere past Mach 2 swings a door in its inlet to hand the air from the turbojet to the ramjet. Leave it alone and it flies up to Mach 3.8 and back on its own.</p>
+  </div>
+
+  <div class="sim-stage">
+    <canvas id="sim" aria-label="A freighter accelerates and climbs; an engine diagram shows the inlet door moving air from a turbojet to a ramjet, and a chart shows thrust against Mach number. Clicking sets the target Mach."></canvas>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <h2>What’s going on</h2>
+      <p>A jet engine squeezes air, adds heat, and throws the hot gas out the back faster than it came in. A turbojet does the squeezing with a compressor, driven by a turbine. A ramjet has no moving parts: above about Mach 2 the inlet slows the incoming air enough to squeeze it on its own. The catch is that a ramjet does nothing standing still, and a turbojet runs out of breath going fast. So this ship carries both, one above the other, sharing one inlet. That arrangement is called an over/under combined cycle.</p>
+
+      <h3>Turbojet</h3>
+      <p>Each engine is the <em>ideal cycle</em> from a propulsion textbook: lossless components, a perfectly expanded nozzle, and constant gas properties. For the turbojet, with τ<sub>r</sub> = 1 + ½(γ−1)M<sub>0</sub>² the ram temperature ratio and τ<sub>λ</sub> = T<sub>t4</sub>/T<sub>0</sub> the burner temperature over ambient,</p>
+      <p class="eq">(V<sub>9</sub>/a<sub>0</sub>)² = 2/(γ−1) · τ<sub>λ</sub>/(τ<sub>r</sub>τ<sub>c</sub>) · (τ<sub>r</sub>τ<sub>c</sub>τ<sub>t</sub> − 1), &nbsp; F = ṁ a<sub>0</sub> (V<sub>9</sub>/a<sub>0</sub> − M<sub>0</sub>)</p>
+      <p>With the afterburner lit, τ<sub>λ</sub>/(τ<sub>r</sub>τ<sub>c</sub>) becomes T<sub>t7</sub>/(T<sub>0</sub>τ<sub>r</sub>τ<sub>c</sub>τ<sub>t</sub>). The afterburner adds about a third more thrust, at a steep cost in fuel.</p>
+      <p>The interesting part is <em>off-design</em>. The engine is sized standing still at sea level, and with a choked turbine its compressor work is tied to the ratio of burner temperature to inlet temperature:</p>
+      <p class="eq">τ<sub>c</sub> − 1 ∝ T<sub>t4</sub>/T<sub>t2</sub>, &nbsp; ṁ ∝ (P<sub>t2</sub>/√T<sub>t2</sub>) · π<sub>c</sub> / √(T<sub>t4</sub>/T<sub>t2</sub>)</p>
+      <p>Going faster heats the air before it even reaches the compressor (T<sub>t2</sub> climbs with M²). The compressor unloads, and its pressure ratio π<sub>c</sub> sags from 12 at takeoff to about 4 at Mach 3. Meanwhile the compressor exit temperature T<sub>t3</sub> keeps rising. Holding T<sub>t3</sub> under its 900 K limit means turning the burner down, and by Mach 3.6 there’s nothing left. Watch π<sub>c</sub> and T<sub>t3</sub> under the engine diagram.</p>
+
+      <h3>Ramjet</h3>
+      <p>Take the compressor and turbine out (τ<sub>c</sub> = τ<sub>t</sub> = 1), and the same equation gets much simpler:</p>
+      <p class="eq">F = ṁ a<sub>0</sub> M<sub>0</sub> (√(τ<sub>λ</sub>/τ<sub>r</sub>) − 1), &nbsp; ṁ = ρ<sub>0</sub> V<sub>0</sub> A<sub>c</sub></p>
+      <p>At zero speed, ṁ is zero and so is the thrust. With no turbine downstream, the burner can also run hotter: 2400 K here, against 1700 K for the turbojet.</p>
+
+      <h3>The hand-off</h3>
+      <p>From Mach 2.0 to 3.0, a door at the front of the splitter swings from sealing the ramjet duct to sealing the turbojet duct, easing the inlet’s air from one engine to the other. Both run in between. The chart shows why the band sits where it does. Below Mach 2 the turbojet is far more fuel-efficient: its specific impulse is above 2500 s, while the ideal ramjet manages under 1900 s. Above Mach 3 the turbojet is temperature-limited and fading, and the ramjet is the only thing still climbing. The narrowest gap between thrust and drag, the <em>pinch point</em>, comes just before the door starts to move. A ship that can’t get through it never reaches ramjet speed.</p>
+
+      <h3>Flying it</h3>
+      <p>The ship is a point mass. Lift balances weight, and the flight-path angle γ follows its command with a short lag:</p>
+      <p class="eq">V̇ = (F − D)/m − g sin γ, &nbsp; ḣ = V sin γ</p>
+      <p>It climbs on a <em>constant dynamic pressure</em> schedule, the usual way to fly an air-breather. Since q = ½ρV² = ½γ<sub>air</sub> p M², holding q at 45 kPa means the higher the Mach, the higher the altitude (the dashed mark on the altitude tape). A PI loop on Mach error sets the single power lever: below 60% it sets turbojet burner temperature, and above that it lights the afterburner. The ramjet’s burner follows the whole lever.</p>
+
+      <h3>Numbers</h3>
+      <p>Mass 30 t, wing area 60 m², zero-lift drag coefficient 0.016 subsonic, peaking at 0.042 just past Mach 1. Turbojet: π<sub>c</sub> = 12 and 150 kg/s at sea-level static, T<sub>t4</sub> up to 1700 K, afterburner 2200 K, T<sub>t3</sub> ≤ 900 K. Ramjet: capture area 1.6 m², T<sub>t4</sub> up to 2400 K. Fuel heating value 42.8 MJ/kg. Standard atmosphere, Mach 2–3 door schedule, q = 45 kPa with a 2 km floor. The sim runs at 50 Hz and twenty times faster than real time.</p>
+      <p class="meta">All values are illustrative, and every engine model is the textbook ideal cycle. Real inlets lose pressure through shocks, which hurts the ramjet most at low Mach, and real hand-offs have to manage inlet stability and relighting. The ship is an original drawing. References: J. Mattingly, <em>Elements of Propulsion: Gas Turbines and Rockets</em>, 2nd ed., AIAA, 2006; P. Hill &amp; C. Peterson, <em>Mechanics and Thermodynamics of Propulsion</em>, 2nd ed.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="wrap">
+  <div>
+    <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li></ul>
+    <p>© Joey Campion</p>
+  </div>
+  <div class="theme-picker" role="group" aria-label="Color theme" hidden>Theme:<button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></div>
+</div></footer>
+</body>
+</html>
