@@ -1,6 +1,6 @@
 import { atmosphere, Propulsion, Vehicle, ClimbGuidance, MachHold } from './sim.js';
 
-const TIME_WARP = 20;         // the M 0.8 → 3.8 run takes ~13 minutes of sim time
+const TIME_WARP = 25;         // the M 0.8 → 3.8 run takes ~19 minutes of sim time
 const DT = 0.02;
 const H_TOP_KM = 26;
 const STAR_COUNT = 260;

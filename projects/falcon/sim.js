@@ -1,8 +1,14 @@
-// Turbojet → ramjet acceleration of a point-mass vehicle. Every engine model is the ideal
-// (textbook) cycle from Mattingly, Elements of Propulsion, ch. 5 & 7: isentropic components,
-// perfectly expanded nozzle, constant γ and cp. Every number is illustrative.
+// Turbojet → ramjet acceleration of a point-mass vehicle. Engine models follow MIT 16.50
+// (Spring 2012) Lectures 18–19: isentropic compressor and turbine, perfectly expanded nozzle,
+// constant γ and cp, plus a lossy inlet. cp and h are the Lecture 19 example's values.
 
-const G0 = 9.80665, GAMMA = 1.4, R_AIR = 287.05, CP = 1004.5, H_PR = 42.8e6;
+const G0 = 9.80665, GAMMA = 1.4, R_AIR = 287.05, CP = 1004, H_PR = 4.3e7;
+const GX = (GAMMA - 1) / GAMMA;
+
+// Military-spec inlet pressure recovery, as given on NASA Glenn's "Inlet Performance" page.
+// ETA_INLET is the subsonic recovery 16.50 Lecture 22 quotes for a well-designed inlet.
+const ETA_INLET = 0.97;
+export const inletRecovery = (M) => ETA_INLET * (M > 1 ? 1 - 0.075 * (M - 1) ** 1.35 : 1);
 const P_SL = 101325, T_SL = 288.15;
 
 const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
@@ -40,10 +46,13 @@ export function atmosphere(h) {
 // As ram heating raises Tt2, the compressor unloads: πc and the thermal efficiency fall. The
 // compressor exit temperature Tt3 also climbs, and holding it under its limit forces Tt4 down.
 // Design point is sea-level static at Tt4R. mdotR is the design airflow.
+// The inlet loss πd lowers Pt2, which costs both airflow and nozzle pressure ratio
+// (the "double penalty" of Lecture 22).
 export function turbojet(atm, M0, { mdotR, piCR, Tt4R, Tt3Max, Tt4, Tt7 = 0 }) {
   const { T, p, a } = atm;
   const tauR = 1 + 0.5 * (GAMMA - 1) * M0 * M0;
-  const Tt2 = T * tauR, Pt2 = p * tauR ** (GAMMA / (GAMMA - 1));
+  const piD = inletRecovery(M0);
+  const Tt2 = T * tauR, Pt2 = p * tauR ** (1 / GX) * piD;
   const tauCR = piCR ** ((GAMMA - 1) / GAMMA), thetaR = Tt4R / T_SL;
   const tauT = 1 - (tauCR - 1) / thetaR;
   Tt4 = Math.min(Tt4, (Tt3Max - Tt2) * thetaR / (tauCR - 1));
@@ -53,9 +62,12 @@ export function turbojet(atm, M0, { mdotR, piCR, Tt4R, Tt3Max, Tt4, Tt7 = 0 }) {
   const tauC = 1 + (th / thetaR) * (tauCR - 1);
   const piC = tauC ** (GAMMA / (GAMMA - 1));
   const mdot = mdotR * (Pt2 / P_SL) / Math.sqrt(Tt2 / T_SL) * (piC / piCR) / Math.sqrt(th / thetaR);
-  const tauL = Tt4 / T, X = tauR * tauC * tauT;
+  // Lecture 18 eqs. 5–7 with πd kept in the pressure accounting: X = (Pt9/p0)^((γ−1)/γ).
+  const X = tauR * tauC * tauT * piD ** GX;
   const ab = Tt7 > Tt4 * tauT;
-  const v9a0sq = (2 / (GAMMA - 1)) * (ab ? (Tt7 / T) / X : tauL / (tauR * tauC)) * (X - 1);
+  const Tt9 = ab ? Tt7 : Tt4 * tauT;
+  const v9a0sq = (2 / (GAMMA - 1)) * (Tt9 / T) * (1 - 1 / X);
+  const tauL = Tt4 / T;
   const f = (CP * T / H_PR) * (ab ? Tt7 / T - tauR : tauL - tauR * tauC);
   // V9 < V0 would make the engine a net drag; the throttle never asks for that, so clamp.
   const F = Math.max(0, mdot * a * (Math.sqrt(Math.max(0, v9a0sq)) - M0));
@@ -68,8 +80,11 @@ export function ramjet(atm, M0, { Ac, Tt4 }) {
   const tauR = 1 + 0.5 * (GAMMA - 1) * M0 * M0;
   const tauL = Tt4 / T;
   const mdot = rho * a * M0 * Ac;
-  if (tauL <= tauR || M0 <= 0) return { F: 0, fuel: 0, mdot };
-  return { F: mdot * a * M0 * (Math.sqrt(tauL / tauR) - 1), fuel: mdot * (CP * T / H_PR) * (tauL - tauR), mdot };
+  const X = tauR * inletRecovery(M0) ** GX;
+  if (tauL <= tauR || X <= 1) return { F: 0, fuel: 0, mdot };
+  // Lossless, this reduces to F = ṁ a0 M0 (√(τλ/τr) − 1).
+  const v9a0 = Math.sqrt((2 / (GAMMA - 1)) * tauL * (1 - 1 / X));
+  return { F: Math.max(0, mdot * a * (v9a0 - M0)), fuel: mdot * (CP * T / H_PR) * (tauL - tauR), mdot };
 }
 
 // Over/under combined cycle. One power lever p ∈ [0, 1]: below `dry` it sets the turbojet's
@@ -78,9 +93,11 @@ export function ramjet(atm, M0, { Ac, Tt4 }) {
 // M_ON and M_OFF; `blend` is how far across it is.
 export class Propulsion {
   constructor({
-    mdotR = 150, piCR = 12, Tt4Idle = 1100, Tt4Max = 1700, Tt3Max = 900, Tt7Max = 2200,
-    Ac = 1.6, Tt4RjMax = 2400, dry = 0.6, M_ON = 2.0, M_OFF = 3.0,
+    mdotR = 150, piCR = null, Tt4Idle = 1100, Tt4Max = 1700, Tt3Max = 900, Tt7Max = 2200,
+    Ac = 1.9, Tt4RjMax = 2400, dry = 0.6, M_ON = 2.0, M_OFF = 3.0,
   } = {}) {
+    // Lecture 19's design rule for maximum thrust per unit airflow, τc = √θt / θ0, at sea-level static.
+    piCR ??= Math.sqrt(Tt4Max / T_SL) ** (1 / GX);
     Object.assign(this, { mdotR, piCR, Tt4Idle, Tt4Max, Tt3Max, Tt7Max, Ac, Tt4RjMax, dry, M_ON, M_OFF });
   }
 
