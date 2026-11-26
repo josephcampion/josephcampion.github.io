@@ -165,9 +165,6 @@ main.wrap, main > .wrap:first-child { padding-top: 2.5rem; }
 .card p { margin: 0.4rem 0; }
 .card .meta { margin: 0; }
 
-.feature { display: grid; gap: 0 2rem; align-items: start; }
-@media (min-width: 52rem) { .feature { grid-template-columns: 3fr 2fr; } }
-.feature .video { margin-top: 0; }
 
 .essay-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
 .essay-nav a { text-decoration: none; }
