@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Death Star Orbit &amp; Attitude — Joey Campion</title>
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="/style.css">
+<meta name="description" content="An interactive orbit and attitude demo: click to pick a new orbit and the Death Star flies a two-burn Hohmann transfer, slewing with a reaction wheel to point its engine before each burn.">
+<link rel="canonical" href="https://joeycampion.com/projects/death-star-pointing/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Joey Campion">
+<meta property="og:title" content="Death Star Orbit &amp; Attitude — Joey Campion">
+<meta property="og:description" content="An interactive orbit and attitude demo: click to pick a new orbit and the Death Star flies a two-burn Hohmann transfer, slewing with a reaction wheel to point its engine before each burn.">
+<meta property="og:url" content="https://joeycampion.com/projects/death-star-pointing/">
+<meta property="og:image" content="https://joeycampion.com/images/life-portrait.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/images/xwing.svg" type="image/svg+xml">
+<script src="/site.js" defer></script>
+<script type="module" src="./demo.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="site-name" href="/">Joey Campion</a>
+  <nav><a href="/work">Work</a><a href="/projects" aria-current="page">Projects</a><a href="/school">School</a><a href="/essays">Essays</a><a href="/life">Life</a><a href="/resume.pdf">Resume</a></nav>
+</div></header>
+
+<main>
+  <div class="wrap">
+    <p class="kicker">Mini demo · Orbits &amp; attitude control</p>
+    <h1>Death Star Orbit &amp; Attitude</h1>
+    <p class="lede">Click (or tap) anywhere to pick a new circular orbit. The Death Star turns to point its engine, burns, coasts halfway around, burns again, then turns back to aim its dish at the planet. Leave it alone and it flies one on its own.</p>
+  </div>
+
+  <div class="sim-stage">
+    <canvas id="sim" aria-label="The Death Star orbits a planet; clicking picks a new orbit radius, and it flies a two-burn transfer to get there"></canvas>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <h2>What’s going on</h2>
+      <p>Two things are simulated together, in 2D: where the Death Star is (its orbit, x and y) and which way it’s facing (its attitude, θ). Thrust only pushes along the dish axis, so the attitude has to be right before the orbit can change.</p>
+
+      <h3>Orbit</h3>
+      <p>Plain two-body gravity, plus engine thrust along the body axis when it’s firing:</p>
+      <p class="eq">r̈ = −μ r / |r|³ + a<sub>thrust</sub> (cos θ, sin θ)</p>
+      <p>The solid ellipse is the current orbit, worked out from position and velocity every frame. Hover to preview a new orbit and the ideal Δv to reach it.</p>
+
+      <h3>Hohmann transfer</h3>
+      <p>The cheapest way between two circular orbits is two burns, half an orbit apart. To go up: burn prograde to stretch the orbit until its far point (apoapsis) reaches the new radius, coast to that point, then burn prograde again to round it out. Going down is the same, burning retrograde. The ideal, instantaneous-burn cost is</p>
+      <p class="eq">Δv = |v<sub>p</sub> − v<sub>1</sub>| + |v<sub>2</sub> − v<sub>a</sub>|, &nbsp; v<sub>circ</sub> = √(μ/r), &nbsp; v = √(μ(2/r − 1/a))</p>
+      <p>Each burn here is a real, finite burn, and it ends on the live orbit rather than a timer. Burn 1 stops when the far side of the orbit reaches the target radius. Burn 2 steers along the exact velocity change that would make the orbit circular, and stops when there’s nothing left to fix. Because the burns take time instead of happening at a point, the Δv used comes out a little above the ideal, most noticeably when dropping to a low, fast orbit.</p>
+
+      <h3>Pointing</h3>
+      <p>The Death Star turns by spinning a <strong>reaction wheel</strong> the other way. The angle error sets a turn-rate command (capped at 3°/s), the rate error sets the wheel torque, and a small integral term trims out steady disturbances:</p>
+      <p class="eq">J θ̈ = u + τ<sub>ext</sub>, &nbsp; ω<sub>c</sub> = sat(k<sub>θ</sub> e<sub>θ</sub>) + ω<sub>ff</sub>, &nbsp; u = J (k<sub>ω</sub>(ω<sub>c</sub> − ω) + k<sub>I</sub>∫e<sub>θ</sub>)</p>
+      <p>The target direction is always moving, whether that’s the planet below or the direction of travel, so the guidance feeds forward how fast its command is turning (ω<sub>ff</sub>). Without that, the station lags a few degrees behind and never lines up well enough to burn. The engine only fires within 2° of the burn direction.</p>
+
+      <h3>Momentum dumping</h3>
+      <p>A constant disturbance torque (exaggerated so you don’t wait all day) keeps pushing on the station. To hold still, the wheel absorbs it and slowly spins up. Watch the <em>wheel momentum</em> bar fill. At 75%, small thrusters on the rim fire against the stored momentum while the attitude loop holds steady, draining the wheel down to 10%. The controller feeds that thruster torque forward too, so the pointing barely moves.</p>
+
+      <h3>Numbers</h3>
+      <p>μ = 4.6 × 10⁶ km³/s² (picked so a 3000 km orbit takes 8 minutes), planet radius 1000 km, engine 0.8 km/s². Attitude: J = 10 kg·m², J<sub>w</sub> = 0.002 kg·m², u<sub>max</sub> = 0.1 N·m, Ω<sub>max</sub> = 6000 rpm, ω<sub>max</sub> = 3°/s, k<sub>θ</sub> = 0.15 /s, k<sub>ω</sub> = 0.6 /s, k<sub>I</sub> = 0.01 /s², τ<sub>dist</sub> = 8 mN·m, desaturation thrusters 30 mN·m. The sim runs at 100 Hz and twelve times faster than real time. The station isn’t drawn to scale.</p>
+      <p class="meta">All values are illustrative. The attitude numbers are sized for a small satellite; a moon-sized battle station would need a much bigger wheel. References: B. Wie, <em>Space Vehicle Dynamics and Control</em>, 2nd ed., AIAA, 2008; H. Curtis, <em>Orbital Mechanics for Engineering Students</em>.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="wrap">
+  <div>
+    <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li></ul>
+    <p>© Joey Campion</p>
+  </div>
+  <div class="theme-picker" role="group" aria-label="Color theme" hidden>Theme:<button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></div>
+</div></footer>
+</body>
+</html>
