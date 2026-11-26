@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Droid Arm Reach — Joey Campion</title>
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="/style.css">
+<meta name="description" content="An interactive manipulator demo: click and a droid's arm plans a smooth straight-line reach, solving inverse kinematics on the fly and using computed-torque control to follow it.">
+<link rel="canonical" href="https://joeycampion.com/projects/droid-arm/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Joey Campion">
+<meta property="og:title" content="Droid Arm Reach — Joey Campion">
+<meta property="og:description" content="An interactive manipulator demo: click and a droid's arm plans a smooth straight-line reach, solving inverse kinematics on the fly and using computed-torque control to follow it.">
+<meta property="og:url" content="https://joeycampion.com/projects/droid-arm/">
+<meta property="og:image" content="https://joeycampion.com/images/life-portrait.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/images/xwing.svg" type="image/svg+xml">
+<script src="/site.js" defer></script>
+<script type="module" src="./demo.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="site-name" href="/">Joey Campion</a>
+  <nav><a href="/work">Work</a><a href="/projects" aria-current="page">Projects</a><a href="/school">School</a><a href="/essays">Essays</a><a href="/life">Life</a><a href="/resume.pdf">Resume</a></nav>
+</div></header>
+
+<main>
+  <div class="wrap">
+    <p class="kicker">Mini demo · Manipulator kinematics &amp; control</p>
+    <h1>Droid Arm Reach</h1>
+    <p class="lede">Click (or tap, or drag) anywhere and the droid’s arm plans a smooth, straight reach to it. Hover to preview the pose. Leave it alone and it runs through a few reaches on its own.</p>
+  </div>
+
+  <div class="sim-stage">
+    <canvas id="sim" aria-label="A side view of a droid's three-joint arm; clicking sets a goal and the arm reaches for it in a straight line"></canvas>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <h2>What’s going on</h2>
+      <p>A droid’s arm, seen from the side with gravity pulling down, has three joints: shoulder, elbow and wrist. Its hand only has two coordinates to hit (x and y), so there’s one joint more than it needs. Each click runs the whole chain: plan a path for the hand, turn it into joint angles, then work out the joint torques that make the arm follow it.</p>
+      <p>At RE2 I worked on this for 6- and 7-DOF arms in 3D; this is the planar textbook version.</p>
+
+      <h3>Forward kinematics &amp; the Jacobian</h3>
+      <p>Write φ<sub>i</sub> = q<sub>1</sub> + … + q<sub>i</sub> for the absolute angle of link i. The hand is the sum of the links laid end to end, and the Jacobian, which maps joint rates to hand velocity, comes straight from differentiating that sum:</p>
+      <p class="eq">p = Σ l<sub>k</sub> (cos φ<sub>k</sub>, sin φ<sub>k</sub>), &nbsp; J<sub>·j</sub> = Σ<sub>k≥j</sub> l<sub>k</sub> (−sin φ<sub>k</sub>, cos φ<sub>k</sub>), &nbsp; ṗ = J q̇</p>
+      <p>Column j is what the hand does if only joint j turns: it swings everything outboard of that joint around it.</p>
+
+      <h3>Trajectory</h3>
+      <p>The hand moves along a straight line on a minimum-jerk profile, the smooth bell-shaped speed curve that human reaching follows:</p>
+      <p class="eq">p<sub>d</sub>(t) = p<sub>0</sub> + (p<sub>1</sub> − p<sub>0</sub>) s(τ), &nbsp; s = 10τ³ − 15τ⁴ + 6τ⁵, &nbsp; τ = t/T</p>
+      <p>The duration T is the shortest that keeps the peak speed (1.875 d/T) and acceleration (5.774 d/T²) under their limits. If you click again or drag mid-move, a new quintic starts from the current position, velocity and acceleration, so the path bends without a jerk. Hover to see the distance and time before you commit.</p>
+
+      <h3>Inverse kinematics</h3>
+      <p>Rather than solving for the joint angles directly, the arm integrates joint rates from the hand velocity it wants, with a feedback term to stop drift (closed-loop inverse kinematics). The rates come from a damped least-squares inverse, with a second term that uses the spare joint:</p>
+      <p class="eq">q̇<sub>d</sub> = J<sup>#</sup>(ṗ<sub>d</sub> + K(p<sub>d</sub> − p)) + (I − J<sup>#</sup>J) k<sub>0</sub>(q<sub>rest</sub> − q<sub>d</sub>), &nbsp; J<sup>#</sup> = Jᵀ(JJᵀ + λ²I)<sup>−1</sup></p>
+      <p>With the arm stretched straight, every joint can only move the hand sideways, so no joint rates can move it outward: J loses rank, and a plain inverse asks for infinite speed. The damping λ trades a little accuracy for bounded rates. It only switches on near that pose, ramping in as the manipulability w = √det(JJᵀ) drops below a threshold, so it costs nothing elsewhere; watch λ on the readout when the arm reaches far. Because there are three joints for two coordinates, a whole family of poses puts the hand in the same spot. The second term picks one by gently pulling the joints toward a relaxed posture, only in directions that don’t move the hand. Joint limits keep the elbow bending one way, and a joint that hits its limit is locked while the others take up the motion.</p>
+
+      <h3>Dynamics &amp; control</h3>
+      <p>The arm is a real rigid-body simulation: each link has mass and inertia, gravity pulls on all of them, and swinging one joint throws the others around. Computed-torque control uses that same model to cancel the arm’s own dynamics, so each joint error behaves like a simple, critically damped spring:</p>
+      <p class="eq">M(q) q̈ + h(q, q̇) = τ, &nbsp; τ = M(q̈<sub>d</sub> + K<sub>d</sub>ė + K<sub>p</sub>e) + h &nbsp;⟹&nbsp; ë + K<sub>d</sub>ė + K<sub>p</sub>e = 0</p>
+      <p>Here M is the mass matrix, h collects gravity and the Coriolis and centrifugal terms, and e = q<sub>d</sub> − q. If the model were perfect and the motors unlimited, the error would stay at zero. It doesn’t quite: each joint has a little friction that the controller doesn’t know about, and each motor has a torque limit. The bars show how close each joint is to its limit, and the chart shows the hand error, a few millimetres while moving that settles back toward zero at rest.</p>
+
+      <h3>Numbers</h3>
+      <p>Links (shoulder, elbow, wrist): l = 0.30, 0.25, 0.10 m; m = 1.5, 1.0, 0.4 kg, with the centre of mass mid-link and I = ml²/12. Torque limits 20, 8 and 1.5 N·m. Joint limits: shoulder ±135°, elbow 0–150°, wrist ±90°. Friction 0.05 N·m·s per joint, unmodelled. K<sub>p</sub> = 400 /s², K<sub>d</sub> = 40 /s. IK: K = 20 /s, λ<sub>0</sub> = 0.05, w<sub>0</sub> = 0.06, k<sub>0</sub> = 2 /s, q<sub>rest</sub> = (−40°, 80°, −20°). Trajectory: v<sub>max</sub> = 0.8 m/s, a<sub>max</sub> = 3 m/s², T ≥ 0.4 s. Goals are kept between 0.20 and 0.62 m from the shoulder and out of the droid’s body. The sim runs in real time at 500 Hz.</p>
+      <p class="meta">All values are illustrative. References: B. Siciliano, L. Sciavicco, L. Villani &amp; G. Oriolo, <em>Robotics: Modelling, Planning and Control</em>, Springer, 2009; M. Spong, S. Hutchinson &amp; M. Vidyasagar, <em>Robot Modeling and Control</em>; Y. Nakamura &amp; H. Hanafusa, 1986, and C. Wampler, 1986 (damped least squares); T. Flash &amp; N. Hogan, 1985 (minimum jerk).</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="wrap">
+  <div>
+    <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li></ul>
+    <p>© Joey Campion</p>
+  </div>
+  <div class="theme-picker" role="group" aria-label="Color theme" hidden>Theme:<button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></div>
+</div></footer>
+</body>
+</html>
