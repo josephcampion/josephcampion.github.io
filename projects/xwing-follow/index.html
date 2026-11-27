@@ -78,53 +78,6 @@
       <p>Everything on this page comes from Beard &amp; McLain’s <em>Small Unmanned Aircraft</em>, chapters 10 and 11. In school, my optimal control final project compared motion planners for a pursuit-evasion game, a cousin of this problem: deciding where a vehicle should go, not just how to get it there. More on the <a href="/school">School</a> page.</p>
     </section>
 
-    <section class="section">
-      <details class="under-hood">
-      <summary>Under the hood: the math</summary>
-      <p>The X-wing is a kinematic model: constant airspeed <i>V<sub>a</sub></i>, and it can only change course by banking. A course loop commands a bank angle, and a second-order roll loop (with a roll-rate limit) chases it:</p>
-      <p class="eq">φ<sub>c</sub> = sat(k<sub>χ</sub>(χ<sub>c</sub> − χ)), &nbsp; χ̇ = (g / V<sub>a</sub>) tan φ</p>
-      <p>Seen from above, banking foreshortens the wings, which is why the X-wing looks narrower in a turn.</p>
-
-      <p>Underneath everything are two path followers from chapter 10. With no waypoints, they’re used directly to chase the cursor.</p>
-
-      <h3>Straight-line following</h3>
-      <p>Far from the cursor, it follows the dashed line from where it started chasing to the cursor. The commanded course bends toward the line in proportion to the cross-track error <i>e<sub>py</sub></i>, saturating at χ<sub>∞</sub>:</p>
-      <p class="eq">χ<sub>c</sub> = χ<sub>q</sub> − χ<sub>∞</sub> (2/π) tan<sup>−1</sup>(k<sub>path</sub> e<sub>py</sub>)</p>
-
-      <h3>Orbit following</h3>
-      <p>Close to the cursor, it switches to a circular orbit of radius <i>R</i>, turning whichever way it’s already headed:</p>
-      <p class="eq">χ<sub>c</sub> = φ + λ (π/2 + tan<sup>−1</sup>(k<sub>orbit</sub> (ρ − R) / R))</p>
-      <p>It enters the orbit inside 2<i>R</i> and only leaves past 4<i>R</i>, so a cursor hovering near the boundary doesn’t make it flip back and forth.</p>
-
-      <h3>Waypoint paths</h3>
-      <p>Chapter 11 adds a path manager on top. It turns a list of waypoints <b>w</b><sub>1</sub>, …, <b>w</b><sub>N</sub> into a sequence of lines and orbits, and hands the current one to the followers above. Here the list wraps around, so the X-wing loops forever. On the canvas the planned path is dashed, the piece being flown is solid, and the short orange tick is the line it has to cross to move on.</p>
-
-      <h3>Half-plane switching</h3>
-      <p>The manager doesn’t wait to hit a waypoint, because an aircraft that overshoots slightly would circle back for it. Instead, each segment ends when the aircraft enters a half-plane:</p>
-      <p class="eq">ℋ(<b>r</b>, <b>n</b>) = { <b>p</b> : (<b>p</b> − <b>r</b>)<sup>T</sup> <b>n</b> ≥ 0 }</p>
-      <p>It doesn’t matter how far off the path the aircraft is when it crosses the boundary.</p>
-
-      <h3>Straight lines</h3>
-      <p>Fly the line from <b>w</b><sub>i−1</sub> along <b>q</b><sub>i−1</sub> = (<b>w</b><sub>i</sub> − <b>w</b><sub>i−1</sub>) / ‖<b>w</b><sub>i</sub> − <b>w</b><sub>i−1</sub>‖. Switch to the next line on crossing the half-plane at <b>w</b><sub>i</sub> whose normal bisects the two legs:</p>
-      <p class="eq"><b>n</b><sub>i</sub> = (<b>q</b><sub>i−1</sub> + <b>q</b><sub>i</sub>) / ‖<b>q</b><sub>i−1</sub> + <b>q</b><sub>i</sub>‖</p>
-      <p>It’s simple, but the path has corners the aircraft can’t fly, so it overshoots every one.</p>
-
-      <h3>Fillets</h3>
-      <p>Round each corner with an arc of radius <i>R</i> tangent to both legs. With ϱ the angle between the legs, the arc starts and ends a distance <i>R</i> / tan(ϱ/2) from the waypoint:</p>
-      <p class="eq">ϱ = cos<sup>−1</sup>(−<b>q</b><sub>i−1</sub><sup>T</sup> <b>q</b><sub>i</sub>), &nbsp; <b>z</b><sub>1</sub> = <b>w</b><sub>i</sub> − (R / tan(ϱ/2)) <b>q</b><sub>i−1</sub>, &nbsp; <b>z</b><sub>2</sub> = <b>w</b><sub>i</sub> + (R / tan(ϱ/2)) <b>q</b><sub>i</sub></p>
-      <p class="eq"><b>c</b> = <b>w</b><sub>i</sub> − (R / sin(ϱ/2)) (<b>q</b><sub>i−1</sub> − <b>q</b><sub>i</sub>) / ‖<b>q</b><sub>i−1</sub> − <b>q</b><sub>i</sub>‖, &nbsp; λ = sign(q<sub>i−1,n</sub> q<sub>i,e</sub> − q<sub>i−1,e</sub> q<sub>i,n</sub>)</p>
-      <p>Follow the line until ℋ(<b>z</b><sub>1</sub>, <b>q</b><sub>i−1</sub>), then orbit <b>c</b> in direction λ until ℋ(<b>z</b><sub>2</sub>, <b>q</b><sub>i</sub>). The path is shorter than the waypoint polygon and never passes through the waypoints. When waypoints are close together, the fillet shrinks so its ends fit on the legs, and then it can be tighter than the X-wing can turn.</p>
-
-      <h3>Dubins paths</h3>
-      <p>Give each waypoint a course as well as a position. Here it’s the direction from the previous waypoint to the next. The shortest path between two such configurations, for a vehicle with a minimum turn radius, is a turn, a straight line and a turn. The four candidates are RSR, RSL, LSR and LSL (R for right, L for left, S for straight). The manager computes all four and keeps the shortest. For RSR, with ϑ the direction between the two right-turn circle centres:</p>
-      <p class="eq">L<sub>RSR</sub> = ‖<b>c</b><sub>rs</sub> − <b>c</b><sub>re</sub>‖ + R ⟨2π + ⟨ϑ − π/2⟩ − ⟨χ<sub>s</sub> − π/2⟩⟩ + R ⟨2π + ⟨χ<sub>e</sub> − π/2⟩ − ⟨ϑ − π/2⟩⟩</p>
-      <p>Here ⟨·⟩ wraps to [0, 2π). The path is flown in three pieces: orbit the start circle until ℋ(<b>z</b><sub>1</sub>, <b>q</b><sub>1</sub>), follow the line until ℋ(<b>z</b><sub>2</sub>, <b>q</b><sub>1</sub>), and orbit the end circle until ℋ(<b>z</b><sub>3</sub>, <b>q</b><sub>3</sub>). Each orbit first waits to be behind its exit plane, so a near-full circle isn’t cut short. The HUD shows which word each leg uses.</p>
-
-      <h3>Numbers</h3>
-      <p>V<sub>a</sub> = 25 m/s, R = 120 m (for orbits, fillets and Dubins turns), χ<sub>∞</sub> = 70°, k<sub>path</sub> = 0.02, k<sub>orbit</sub> = 5, φ<sub>max</sub> = 35°, roll loop ω<sub>n</sub> = 3 rad/s and ζ = 0.7. The tightest turn at full bank is V<sub>a</sub><sup>2</sup> / (g tan φ<sub>max</sub>) ≈ 91 m, so R leaves some margin. There are up to 8 waypoints, and tapping within 60 m of one removes it. The sim runs at 100 Hz and four times faster than real time.</p>
-      <p class="meta">Reference: R. W. Beard and T. W. McLain, <em>Small Unmanned Aircraft: Theory and Practice</em>, Princeton University Press, 2012, ch. 10 (path following) and ch. 11 (path manager: half-plane transitions, fillets and Dubins paths).</p>
-      </details>
-    </section>
     <nav class="essay-nav" aria-label="Mini demos"><a href="/projects/falcon/"><span>← Previous demo</span>Millennium Falcon: Turbojet to Ramjet</a><a href="/projects/death-star-pointing/"><span>Next demo →</span>Death Star Orbit &amp; Attitude</a></nav>
   </div>
 </main>

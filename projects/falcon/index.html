@@ -71,55 +71,9 @@
     <section class="section">
       <h2>Where I’ve done this for real</h2>
       <p>At Hermeus I worked on Quarterhorse, an F-16-sized drone built to reach Mach 2.5 and beyond. Along with flight controls and navigation, I designed propulsion controls that reached Mach 3 conditions in testing at the Notre Dame Turbomachinery Lab. Real Engineering made a <a href="https://www.youtube.com/watch?v=UyKtxsdI0z8" target="_blank" rel="noopener">video about Hermeus</a> if you want the bigger picture.</p>
-      <p>The engine models here come from MIT’s 16.50, Introduction to Propulsion Systems, which I worked through on my own. Every number below is either from a cited source or labeled as my own choice.</p>
+      <p>The engine models here come from MIT’s 16.50, Introduction to Propulsion Systems, which I worked through on my own.</p>
     </section>
 
-    <section class="section">
-      <details class="under-hood">
-      <summary>Under the hood: the math and sources</summary>
-      <p>A jet engine squeezes air, adds heat, and throws the hot gas out the back faster than it came in. A turbojet does the squeezing with a compressor, driven by a turbine. A ramjet has no moving parts: at supersonic speed the inlet slows the incoming air enough to squeeze it on its own. The catch is that a ramjet does nothing standing still, and a turbojet runs out of breath going fast. So this ship carries both, one above the other, sharing one inlet. NASA’s studies of turbine-based combined-cycle propulsion picked this “over/under” layout as their reference, because sharing the inlet saves weight<sup><a href="#ref-nasa-m4">[4]</a></sup>.</p>
-
-      <h3>Turbojet</h3>
-      <p>The engine model is the one from MIT’s 16.50 lecture notes<sup><a href="#ref-1650">[1]</a></sup>, built by tracking stagnation temperature and pressure through each component. The compressor and turbine are lossless and the nozzle is perfectly expanded. With τ<sub>r</sub> = 1 + ½(γ−1)M<sub>0</sub>² for the ram temperature ratio, the jet speed comes from the nozzle’s total pressure ratio (Lecture 18, eqs. 4–8):</p>
-      <p class="eq">(V<sub>9</sub>/a<sub>0</sub>)² = 2/(γ−1) · (T<sub>t9</sub>/T<sub>0</sub>) · (1 − 1/X), &nbsp; X = τ<sub>r</sub> π<sub>d</sub><sup>(γ−1)/γ</sup> τ<sub>c</sub> τ<sub>t</sub>, &nbsp; F = ṁ a<sub>0</sub> (V<sub>9</sub>/a<sub>0</sub> − M<sub>0</sub>)</p>
-      <p>The turbine only has to drive the compressor, so τ<sub>t</sub> = 1 − (T<sub>t2</sub>/T<sub>t4</sub>)(τ<sub>c</sub> − 1) (eq. 9). The fuel flow comes from the burner’s heat balance, and specific impulse is thrust per unit weight of fuel burned per second (eqs. 10b–11). With the afterburner lit, T<sub>t9</sub> is the afterburner temperature instead of the turbine exit temperature. The afterburner adds about a third more thrust, at a steep cost in fuel.</p>
-      <p>The compressor isn’t picked by hand. Lecture 19 shows that thrust per unit airflow peaks at τ<sub>c</sub> = √θ<sub>t</sub>/θ<sub>0</sub>, which puts the compressor exit temperature at the geometric mean of the ambient and turbine-inlet temperatures. Sized that way standing still at sea level with a 1700 K burner, the compressor pressure ratio is π<sub>c</sub> ≈ 22.</p>
-      <p>The interesting part is flying off that design point. Assume the turbine and nozzle stay choked, so τ<sub>t</sub> holds its design value. Then the turbine balance above gives τ<sub>c</sub> − 1 ∝ T<sub>t4</sub>/T<sub>t2</sub>, and choked flow through the turbine makes airflow scale with P<sub>t2</sub> π<sub>c</sub> / √T<sub>t4</sub>. Going faster heats the air before it reaches the compressor, since T<sub>t2</sub> climbs with M². So the compressor unloads, and π<sub>c</sub> sags from 22 at takeoff to about 5 by Mach 2.8. Meanwhile the compressor exit temperature T<sub>t3</sub> keeps rising. Lecture 19 points out that the turbojet runs out of room when the compressor exit reaches the turbine inlet temperature, because no fuel can be added. In practice materials cap T<sub>t3</sub> well before that. This sim holds it under 900 K by turning the burner down, and by Mach 3.5 nothing is left. Watch π<sub>c</sub> and T<sub>t3</sub> under the engine diagram.</p>
-
-      <h3>Ramjet</h3>
-      <p>Lecture 19 notes that a turbojet with τ<sub>c</sub> = 1 is a ramjet. Setting τ<sub>c</sub> = τ<sub>t</sub> = 1 in the same equations, and letting the inlet capture the whole free-stream tube of area A<sub>c</sub>, gives</p>
-      <p class="eq">ṁ = ρ<sub>0</sub> V<sub>0</sub> A<sub>c</sub>, &nbsp; without inlet losses: &nbsp; F = ṁ a<sub>0</sub> M<sub>0</sub> (√(T<sub>t4</sub>/T<sub>t0</sub>) − 1)</p>
-      <p>At zero speed, ṁ is zero and so is the thrust. With no turbine downstream, the burner can also run hotter: 2400 K here, against 1700 K for the turbojet.</p>
-
-      <h3>Inlet losses</h3>
-      <p>Slowing supersonic air takes shock waves, and shocks lose total pressure. That costs both engines twice: less air gets through, and the nozzle has less pressure to expand (Lecture 22<sup><a href="#ref-1650">[1]</a></sup>). The sim uses the military-specification recovery curve given on NASA Glenn’s inlet page<sup><a href="#ref-grc">[2]</a></sup>, with a subsonic recovery of 0.97, the figure Lecture 22 quotes for a well-designed subsonic inlet:</p>
-      <p class="eq">π<sub>d</sub> = 0.97 &nbsp; (M ≤ 1), &nbsp; π<sub>d</sub> = 0.97 · (1 − 0.075 (M − 1)<sup>1.35</sup>) &nbsp; (M &gt; 1)</p>
-      <p>That keeps 90% of the total pressure at Mach 2 and 65% at Mach 4. NASA calls it a good first estimate and says real inlets usually do a little worse. It assumes a well-shaped multi-shock inlet: a plain normal-shock inlet keeps only about 71% at Mach 2 and 32% at Mach 3 (Lecture 22).</p>
-
-      <h3>The hand-off</h3>
-      <p>Combined-cycle studies make the switch at around Mach 3 to 4<sup><a href="#ref-nasa-m4">[4]</a></sup>. NASA’s reference design pushes it to Mach 4 and treats that as a practical limit, and its wind-tunnel program needed a specially modified turbine engine just to run at Mach 3<sup><a href="#ref-nasa-limx">[5]</a></sup>. An ordinary turbojet like this one gives out sooner. So here a door at the front of the splitter swings from sealing the ramjet duct at Mach 2.0 to sealing the turbojet duct at Mach 3.0, and both engines run in between.</p>
-      <p>The chart shows why that band works. Below Mach 2 the turbojet is far more fuel-efficient: with afterburner its specific impulse is above 2600 s, while the ramjet manages under 1850 s. Past Mach 3 the turbojet is temperature-limited and fading, and the ramjet is the only thing still pulling. The narrowest gap between thrust and drag, the <em>pinch point</em>, comes at Mach 2, just before the door starts to move. A ship that can’t get through it never reaches ramjet speed.</p>
-
-      <h3>Flying it</h3>
-      <p>The ship is a point mass. Lift balances weight, and the flight-path angle γ follows its command with a short lag:</p>
-      <p class="eq">V̇ = (F − D)/m − g sin γ, &nbsp; ḣ = V sin γ</p>
-      <p>It climbs on a <em>constant dynamic pressure</em> schedule, the usual way to fly an air-breather. Since q = ½ρV² = ½γ<sub>air</sub> p M², holding q at 45 kPa means the higher the Mach, the higher the altitude (the dashed mark on the altitude tape). Air properties come from the 1976 U.S. Standard Atmosphere<sup><a href="#ref-atm">[3]</a></sup>. A PI loop on Mach error sets the single power lever: below 60% it sets turbojet burner temperature, and above that it lights the afterburner. The ramjet’s burner follows the whole lever.</p>
-
-      <h3>Numbers</h3>
-      <p><strong>From the sources:</strong> γ = 1.4, c<sub>p</sub> = 1004 J/kg·K and fuel heating value h = 4.3 × 10⁷ J/kg are the values in Lecture 19’s worked example [1]. The compressor ratio follows Lecture 19’s optimum [1]. Inlet recovery and the 0.97 subsonic value come from [2] and Lecture 22 [1]. Atmosphere: [3].</p>
-      <p><strong>My own illustrative choices,</strong> not taken from any real aircraft or engine: mass 30 t; wing area 60 m²; the drag coefficients (0.016 subsonic, peaking at 0.042 just past Mach 1); turbojet airflow 150 kg/s at sea-level static, burner 1100–1700 K, afterburner 2200 K, T<sub>t3</sub> ≤ 900 K; ramjet capture area 1.9 m² and burner up to 2400 K; the Mach 2–3 door schedule; q = 45 kPa with a 2 km floor; and the control gains. The sim runs at 50 Hz and 25 times faster than real time. The ship is an original drawing.</p>
-
-      <h3>Sources</h3>
-      <ol class="meta">
-        <li id="ref-1650">J. L. Kerrebrock &amp; M. Martinez-Sanchez, <a href="https://ocw.mit.edu/courses/16-50-introduction-to-propulsion-systems-spring-2012/pages/lecture-notes/"><em>16.50 Introduction to Propulsion Systems</em>, lecture notes</a>, MIT OpenCourseWare, Spring 2012 (CC BY-NC-SA). Lecture 18: turbojet model, eqs. 4–11. Lecture 19: design parameters, optimum τ<sub>c</sub>, Mach limit, worked example (pp. 2–3). Lecture 22: inlets (pp. 2–4).</li>
-        <li id="ref-grc">NASA Glenn Research Center, <a href="https://www.grc.nasa.gov/www/k-12/airplane/inleth.html">“Inlet Performance,”</a> Beginner’s Guide to Propulsion.</li>
-        <li id="ref-atm"><a href="https://ntrs.nasa.gov/citations/19770009539"><em>U.S. Standard Atmosphere, 1976</em></a>, NOAA/NASA/USAF, NASA-TM-X-74335, 1976.</li>
-        <li id="ref-nasa-m4">L. E. Foster, J. D. Saunders, B. W. Sanders &amp; L. J. Weir, <a href="https://ntrs.nasa.gov/citations/20130003353">“Highlights From a Mach 4 Experimental Demonstration of Inlet Mode Transition for Turbine-Based Combined Cycle Hypersonic Propulsion,”</a> NASA/TM-2012-217724, 2012, pp. 2–3.</li>
-        <li id="ref-nasa-limx">J. D. Saunders et al., <a href="https://ntrs.nasa.gov/citations/20120002930">“Testing of the NASA Hypersonics Project Combined Cycle Engine Large Scale Inlet Mode Transition Experiment (CCE LIMX),”</a> NASA/TM-2012-217217, 2012, Appendix (p. 15).</li>
-      </ol>
-      <p class="meta">Every engine model here is an ideal cycle plus the inlet loss above. Real engines also lose pressure in the burner and nozzle, and real hand-offs have to manage inlet stability and relighting.</p>
-      </details>
-    </section>
     <nav class="essay-nav" aria-label="Mini demos"><a href="/projects/droid-arm/"><span>← Previous demo</span>Droid Arm Reach</a><a href="/projects/xwing-follow/"><span>Next demo →</span>X-Wing Path Following</a></nav>
   </div>
 </main>
