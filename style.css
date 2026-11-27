@@ -305,7 +305,6 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 
 .palette-btn { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); }
 .palette-btn:hover { color: var(--fg); }
-@media (hover: none) { .palette-btn { display: none; } }
 .palette-btn kbd, .palette-foot { font: 0.75rem/1 var(--mono); }
 .palette-btn kbd { display: inline-block; padding: 0.2rem 0.4rem; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; }
 .palette {

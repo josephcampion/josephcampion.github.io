@@ -78,9 +78,12 @@ const commands = [
 const header = document.querySelector('.site-header nav');
 if (header && window.HTMLDialogElement) {
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+  // Phones and tablets have no ⌘K, so they get a tappable prompt glyph instead of the key cap.
+  const touch = matchMedia('(hover: none)').matches;
   const dlg = document.createElement('dialog');
   dlg.className = 'palette';
-  dlg.innerHTML = '<label class="palette-prompt"><span aria-hidden="true">&gt;</span><input type="text" placeholder="Go to a page or run a command" aria-label="Command" autocomplete="off" spellcheck="false" role="combobox" aria-controls="palette-list" aria-expanded="true"></label><ul id="palette-list" role="listbox"></ul><p class="palette-foot">↑↓ SELECT · ↵ EXECUTE · ESC CLOSE</p>';
+  dlg.innerHTML = '<label class="palette-prompt"><span aria-hidden="true">&gt;</span><input type="text" placeholder="Go to a page or run a command" aria-label="Command" autocomplete="off" spellcheck="false" role="combobox" aria-controls="palette-list" aria-expanded="true"></label><ul id="palette-list" role="listbox"></ul><p class="palette-foot"></p>';
+  dlg.querySelector('.palette-foot').textContent = touch ? 'TAP TO RUN · TAP OUTSIDE TO CLOSE' : '↑↓ SELECT · ↵ EXECUTE · ESC CLOSE';
   document.body.append(dlg);
   const input = dlg.querySelector('input');
   const list = dlg.querySelector('ul');
@@ -115,7 +118,7 @@ if (header && window.HTMLDialogElement) {
     else if (/^https?:/.test(action)) window.open(action, '_blank', 'noopener');
     else location.href = action;
   };
-  const open = () => { input.value = ''; sel = 0; render(); dlg.showModal(); input.focus(); };
+  const open = () => { input.value = ''; sel = 0; render(); dlg.showModal(); if (touch) input.blur(); else input.focus(); };
   input.addEventListener('input', () => { sel = 0; render(); });
   input.addEventListener('keydown', (ev) => {
     if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -135,7 +138,7 @@ if (header && window.HTMLDialogElement) {
   btn.type = 'button';
   btn.className = 'palette-btn';
   btn.setAttribute('aria-label', 'Open command menu');
-  btn.innerHTML = `<kbd>${isMac ? '⌘' : 'Ctrl '}K</kbd>`;
+  btn.innerHTML = touch ? '<kbd>&gt;_</kbd>' : `<kbd>${isMac ? '⌘' : 'Ctrl '}K</kbd>`;
   btn.addEventListener('click', open);
   header.append(btn);
 }
