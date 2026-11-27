@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Joey Campion</title>
+  <subtitle>Essays and interactive GNC demos.</subtitle>
+  <link href="https://joeycampion.com/feed.xml" rel="self"/>
+  <link href="https://joeycampion.com/"/>
+  <id>https://joeycampion.com/</id>
+  <author><name>Joey Campion</name></author>
+  <updated>2026-11-26T14:36:34-05:00</updated>
+
+  <entry>
+    <title>Millennium Falcon: Turbojet to Ramjet</title>
+    <link href="https://joeycampion.com/projects/falcon/"/>
+    <id>https://joeycampion.com/projects/falcon/</id>
+    <updated>2026-11-26T14:36:34-05:00</updated>
+    <summary>An interactive propulsion demo: click to set a target Mach and a freighter accelerates on an afterburning turbojet, then hands its inlet over to a ramjet between Mach 2 and 3.</summary>
+  </entry>
+
+  <entry>
+    <title>Droid Arm Reach</title>
+    <link href="https://joeycampion.com/projects/droid-arm/"/>
+    <id>https://joeycampion.com/projects/droid-arm/</id>
+    <updated>2026-11-26T14:22:10-05:00</updated>
+    <summary>An interactive manipulator demo: click and a droid's arm plans a smooth straight-line reach, solving inverse kinematics on the fly and using computed-torque control to follow it.</summary>
+  </entry>
+
+  <entry>
+    <title>Death Star Orbit &amp; Attitude</title>
+    <link href="https://joeycampion.com/projects/death-star-pointing/"/>
+    <id>https://joeycampion.com/projects/death-star-pointing/</id>
+    <updated>2026-11-26T14:12:07-05:00</updated>
+    <summary>An interactive orbit and attitude demo: click to pick a new orbit and the Death Star flies a two-burn Hohmann transfer, slewing with a reaction wheel to point its engine before each burn.</summary>
+  </entry>
+
+  <entry>
+    <title>X-Wing Path Following</title>
+    <link href="https://joeycampion.com/projects/xwing-follow/"/>
+    <id>https://joeycampion.com/projects/xwing-follow/</id>
+    <updated>2026-11-21T22:07:30-05:00</updated>
+    <summary>An interactive demo of Beard &amp; McLain path following and path management: an X-wing flies a waypoint loop with straight lines, fillets or Dubins paths.</summary>
+  </entry>
+
+  <entry>
+    <title>Hogwarts Pedagogy</title>
+    <link href="https://joeycampion.com/essays/hogwarts-pedagogy"/>
+    <id>https://joeycampion.com/essays/hogwarts-pedagogy</id>
+    <updated>2022-05-09T00:00:00-04:00</updated>
+    <summary>What if you could wave a magic wand and learn twice as much in all your classes? Well, muggle, you can.</summary>
+  </entry>
+</feed>

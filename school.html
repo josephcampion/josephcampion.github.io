@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>School — Joey Campion</title>
-<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark"||t==="night")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=B612:ital,wght@0,400;0,700;1,400&family=B612+Mono:wght@400;700&display=swap">
@@ -16,8 +16,12 @@
 <meta property="og:title" content="School — Joey Campion">
 <meta property="og:description" content="Haptics research in the CHARM Lab and class projects in estimation, optimal control, and dynamics.">
 <meta property="og:url" content="https://joeycampion.com/school">
-<meta property="og:image" content="https://joeycampion.com/images/graphkit.png">
+<meta property="og:image" content="https://joeycampion.com/images/og/school.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="School — Joey Campion — share card">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="alternate" type="application/atom+xml" title="Joey Campion" href="/feed.xml">
 <link rel="icon" href="/images/jc.svg" type="image/svg+xml">
 <script src="/site.js" defer></script>
 </head>
@@ -60,11 +64,10 @@
 </main>
 
 <footer class="site-footer"><div class="wrap">
-  <div>
-    <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li></ul>
-    <p>© Joey Campion</p>
-  </div>
-  <div class="theme-picker" role="group" aria-label="Color theme" hidden>Theme:<button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="dark">Dark</button></div>
+  <ul class="links"><li><a href="https://github.com/josephcampion">GitHub</a></li><li><a href="https://www.linkedin.com/in/joseph-campion-9736123a3/">LinkedIn</a></li><li><a class="email" data-user="josephcampion" data-domain="fastmail.com" hidden>Email</a></li><li><a href="/feed.xml">RSS</a></li></ul>
+  <div class="theme-picker" role="group" aria-label="Color theme" hidden>Theme:<button type="button" data-theme-choice="auto">Auto</button><button type="button" data-theme-choice="light">Day</button><button type="button" data-theme-choice="dark">HUD</button><button type="button" data-theme-choice="night">Night Ops</button></div>
+  <ul class="links footer-pages"><li><a href="/reading">/reading</a></li><li><a href="/colophon">/colophon</a></li></ul>
+  <p class="footer-meta">© Joey Campion</p>
 </div></footer>
 </body>
 </html>
