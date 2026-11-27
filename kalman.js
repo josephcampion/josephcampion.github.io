@@ -11,8 +11,7 @@
   const FADE = 0.4;             // s
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
-  let canvas, ctx, raf = 0, enabled = false, colors = {};
-  let pointer = null, leftAt = 0, lastMeas = 0, lastFrame = 0;
+  let lastMeas = 0;
   let marks = [], trail = [];
   // x and y are independent with identical noise, so the 4-state filter splits into two 2-state ones
   // and the cross-covariance stays zero: the 2×2 position block is diagonal and its eigenvalues are Pxx, Pyy.
@@ -40,32 +39,8 @@
     f.a -= k0 * f.a;
   };
 
-  const readColors = () => {
-    const cs = getComputedStyle(document.documentElement);
-    const get = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
-    colors = { accent: get('--accent', 'currentColor'), muted: get('--muted', 'gray'), fg: get('--fg', 'black') };
-  };
-
-  const resize = () => {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(innerWidth * dpr);
-    canvas.height = Math.round(innerHeight * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-
-  const onMove = (e) => { pointer = { x: e.clientX, y: e.clientY }; leftAt = 0; };
-  const onLeave = (e) => {
-    if (e.type === 'pointerout' && e.relatedTarget) return;
-    if (e.type === 'pointerup' && e.pointerType === 'mouse') return;
-    if (pointer) { pointer = null; leftAt = performance.now() / 1000; }
-  };
-
-  const frame = (ms) => {
-    raf = requestAnimationFrame(frame);
-    const t = ms / 1000;
-    const dt = Math.min(0.1, lastFrame ? t - lastFrame : 0);
-    lastFrame = t;
-
+  const frame = (ctx, t, dt, ptr, colors) => {
+    const { pointer } = ptr;
     if (fx) { predict(fx, dt); predict(fy, dt); }
     if (pointer && t - lastMeas >= MEAS_DT) {
       lastMeas = t;
@@ -74,10 +49,10 @@
       if (!fx) { fx = init(z.x); fy = init(z.y); } else { update(fx, z.x); update(fy, z.y); }
     }
     let alpha = 1;
-    if (!pointer && leftAt) {
-      const since = t - leftAt;
+    if (!pointer && ptr.leftAt) {
+      const since = t - ptr.leftAt;
       alpha = Math.max(0, 1 - (since - COAST) / FADE);
-      if (since > COAST + FADE) { fx = fy = null; trail = []; leftAt = 0; }
+      if (since > COAST + FADE) { fx = fy = null; trail = []; ptr.leftAt = 0; }
     }
 
     marks = marks.filter((m) => t - m.t < MARK_LIFE);
@@ -85,7 +60,6 @@
     if (fx) trail.push({ x: fx.p, y: fy.p, t });
     trail = trail.filter((p) => t - p.t < trailLife);
 
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
     ctx.lineWidth = 1.25;
     ctx.strokeStyle = colors.muted;
     for (const m of marks) {
@@ -129,72 +103,11 @@
     ctx.globalAlpha = 1;
   };
 
-  const toast = (text) => {
-    const el = document.createElement('div');
-    el.textContent = text;
-    el.setAttribute('role', 'status');
-    el.style.cssText = 'position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);z-index:2147483001;'
-      + 'padding:0.45rem 0.8rem;font:0.75rem/1.4 var(--mono, monospace);letter-spacing:0.06em;'
-      + 'color:var(--fg);background:var(--card);border:1px solid var(--accent);border-radius:4px;'
-      + 'pointer-events:none;transition:opacity 0.4s;';
-    document.body.append(el);
-    setTimeout(() => { el.style.opacity = '0'; }, 2000);
-    setTimeout(() => el.remove(), 2500);
-  };
-
-  const save = () => { try { sessionStorage.setItem('kalmanCursor', enabled ? '1' : '0'); } catch {} };
-
-  const on = (quiet) => {
-    if (enabled) return;
-    enabled = true;
-    canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483000;';
-    document.body.append(canvas);
-    ctx = canvas.getContext('2d');
-    readColors();
-    resize();
-    addEventListener('resize', resize);
-    addEventListener('pointermove', onMove, { passive: true });
-    addEventListener('pointerdown', onMove, { passive: true });
-    addEventListener('pointerout', onLeave, { passive: true });
-    addEventListener('pointerup', onLeave, { passive: true });
-    addEventListener('pointercancel', onLeave, { passive: true });
-    lastFrame = 0;
-    raf = requestAnimationFrame(frame);
-    save();
-    if (quiet !== true) toast('KALMAN CURSOR ON \u2014 press k to turn off');
-  };
-
-  const off = () => {
-    if (!enabled) return;
-    enabled = false;
-    cancelAnimationFrame(raf);
-    removeEventListener('resize', resize);
-    removeEventListener('pointermove', onMove);
-    removeEventListener('pointerdown', onMove);
-    removeEventListener('pointerout', onLeave);
-    removeEventListener('pointerup', onLeave);
-    removeEventListener('pointercancel', onLeave);
-    canvas.remove();
-    fx = fy = pointer = null;
-    marks = []; trail = []; leftAt = 0;
-    save();
-    toast('KALMAN CURSOR OFF');
-  };
-
-  const toggle = () => (enabled ? off() : on());
-
-  addEventListener('keydown', (e) => {
-    if (e.key !== 'k' || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
-    const el = e.target;
-    if (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
-    toggle();
+  window.fun.funToy({
+    key: 'k',
+    name: 'KALMAN CURSOR',
+    global: 'kalmanCursor',
+    frame,
+    reset: () => { fx = fy = null; marks = []; trail = []; },
   });
-  document.addEventListener('themechange', () => enabled && readColors());
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => enabled && readColors());
-
-  window.kalmanCursor = { on: () => on(), off, toggle, get enabled() { return enabled; } };
-
-  try { if (sessionStorage.getItem('kalmanCursor') === '1') on(true); } catch {}
 })();

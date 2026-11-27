@@ -36,11 +36,22 @@ if (picker) {
   picker.hidden = false;
 }
 
-const loadScript = (src) => document.head.append(Object.assign(document.createElement('script'), { src }));
-loadScript('/kalman.js');
+// async = false keeps injected scripts in insertion order; the eggs need fun.js first.
+const loadScript = (src, type = 'text/javascript') => document.head.append(Object.assign(document.createElement('script'), { src, type, async: false }));
+for (const src of ['/fun.js', '/kalman.js', '/pid.js', '/eggs.js']) loadScript(src);
+loadScript('/flybys.js', 'module');
 
 // Command palette, opened with ⌘K / Ctrl+K or the key-cap button in the header.
 const commands = [
+  ['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()],
+  ['Fun', 'PID drone: step damping  [P]', () => window.pidDrone?.press()],
+  ['Fun', 'Barrel roll  (or type "barrel roll")', () => window.fun?.barrelRoll()],
+  ['Fun', 'Zero-g  (or the Konami code)', () => window.fun?.zeroG()],
+  ['Fun', 'Sonic boom  (or scroll really fast)', () => window.fun?.boom()],
+  ['Fun', 'X-wing vs TIE  (or click 5 empty spots)', () => window.fun?.xwingVsTie()],
+  ['Fun', 'Freighter flyby  (hidden on the Work page)', () => window.fun?.flyby()],
+  ['Fun', 'Droid whirl  (hidden on the Work page)', () => window.fun?.droid()],
+  ['Fun', 'Launch the badge  (or click it 10\u00d7 on Home)', () => window.fun?.launchBadge()],
   ['Pages', 'Home', '/'],
   ['Pages', 'Work', '/work'],
   ['Pages', 'Projects', '/projects'],
@@ -60,7 +71,6 @@ const commands = [
   ['Theme', 'Day', () => setTheme('light')],
   ['Theme', 'HUD (green on dark)', () => setTheme('dark')],
   ['Theme', 'Night Ops (red)', () => setTheme('night')],
-  ['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()],
   ['Link', 'Copy link to this page', () => navigator.clipboard?.writeText(location.href)],
   ['Link', 'GitHub', 'https://github.com/josephcampion'],
   ['Link', 'LinkedIn', 'https://www.linkedin.com/in/joseph-campion-9736123a3/'],
@@ -131,7 +141,7 @@ if (header && window.HTMLDialogElement) {
 }
 
 // Clicking the homepage badge kicks it like an underdamped rotational spring; six quick clicks
-// command a full turn, which settles as a step response.
+// command a full turn, which settles as a step response, and ten launch it (eggs.js).
 const badge = document.querySelector('.site-name');
 if (badge && location.pathname === '/' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
   const wn = 12, zeta = 0.15;
@@ -154,8 +164,9 @@ if (badge && location.pathname === '/' && !matchMedia('(prefers-reduced-motion: 
     ev.preventDefault();
     const now = performance.now();
     clicks.push(now);
-    while (clicks[0] < now - 2500) clicks.shift();
-    if (clicks.length >= 6) { ref += 360; clicks.length = 0; } else omega += clicks.length % 2 ? 260 : -260;
+    while (clicks[0] < now - 3500) clicks.shift();
+    if (clicks.length >= 10) { clicks.length = 0; window.fun?.launchBadge(); return; }
+    if (clicks.length === 6) ref += 360; else omega += clicks.length % 2 ? 260 : -260;
     if (!running) { running = true; last = now; requestAnimationFrame(tick); }
   });
 }

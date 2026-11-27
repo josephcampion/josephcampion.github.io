@@ -250,6 +250,11 @@ main.wrap, main > .wrap:first-child { padding-top: 2.5rem; }
 .sim-controls button[aria-pressed="true"] { color: var(--fg); box-shadow: inset 0 -2px var(--accent); }
 .sim-controls .meta { flex-basis: 100%; margin: 0; }
 
+/* Easter-egg triggers hide in plain text until hovered. */
+.egg { cursor: pointer; }
+.site-name.launched::before, .site-name.launched::after { visibility: hidden; }
+.egg:hover { text-decoration: underline dotted var(--accent); text-underline-offset: 3px; }
+
 .under-hood > summary { font: 0.9rem var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); cursor: pointer; list-style: none; }
 .under-hood > summary::-webkit-details-marker { display: none; }
 .under-hood > summary::before { content: "▸ "; }
