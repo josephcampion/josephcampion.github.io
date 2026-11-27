@@ -221,6 +221,7 @@ main.wrap, main > .wrap:first-child { padding-top: 2.5rem; }
 
 .essay-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
 .essay-nav a { text-decoration: none; }
+.essay-nav a:last-child:not(:first-child) { text-align: right; }
 .essay-nav span { display: block; color: var(--muted); font: 0.8rem var(--mono); text-transform: uppercase; }
 
 .sim-stage { margin: 1.5rem auto 0; max-width: 72rem; padding: 0 16px; }
