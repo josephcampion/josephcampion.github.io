@@ -5,6 +5,8 @@
   --line: #d9dde1;
   --accent: #13803f;
   --card: #ffffff;
+  --gold: #e4c473;
+  --gold-shade: #c39a45;
   --measure: 44rem;
   --wide: 64rem;
   --sans: "B612", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -20,6 +22,8 @@
     --line: #262c33;
     --accent: #45e08a;
     --card: #141920;
+    --gold: #8f7333;
+    --gold-shade: #5f4c22;
   }
 }
 
@@ -31,6 +35,8 @@
   --line: #262c33;
   --accent: #45e08a;
   --card: #141920;
+  --gold: #8f7333;
+  --gold-shade: #5f4c22;
   color-scheme: dark;
 }
 :root[data-theme="light"] { color-scheme: light; }
@@ -43,6 +49,8 @@
   --line: #3a0000;
   --accent: #ff8a5c;
   --card: #0e0000;
+  --gold: #8f7333;
+  --gold-shade: #5f4c22;
   color-scheme: dark;
 }
 :root[data-theme="night"] img, :root[data-theme="night"] iframe { filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(3) brightness(0.7); }
@@ -271,7 +279,7 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 
 .meta .tag { display: inline-block; padding: 0 0.4rem; border: 1px solid var(--line); border-radius: 3px; font-size: 0.72rem; text-transform: uppercase; }
 
-.card svg.patch { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0.75rem; margin: 0 0 0.75rem; background: var(--bg); border-radius: 4px; }
+.card svg.screen { display: block; width: 100%; height: auto; margin: 0 0 0.75rem; }
 
 .theme-picker { display: flex; align-items: baseline; gap: 0.75rem; }
 .theme-picker[hidden] { display: none; }
@@ -335,20 +343,3 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 .preview-title { font-weight: 700; }
 .preview-text { color: var(--muted); margin-top: 0.2rem !important; }
 
-.books { list-style: none; padding: 0 !important; }
-.books li { margin: 0 0 1.1rem; }
-.books cite { font-style: normal; font-weight: 700; }
-.books .meta { display: block; margin: 0.1rem 0 0; }
-.books p { margin: 0.2rem 0 0; }
-
-/* Night Ops repaints the demo patches; CSS beats the SVGs' presentation attributes, so the patch markup keeps its normal colors. */
-:root[data-theme="night"] .patch [fill="#0f1b26"] { fill: #000000; }
-:root[data-theme="night"] .patch [fill="#14232f"] { fill: #0e0000; }
-:root[data-theme="night"] .patch [fill="#24313d"] { fill: #3a0000; }
-:root[data-theme="night"] .patch [fill="#e8ebee"] { fill: #ff5040; }
-:root[data-theme="night"] .patch [fill="#45e08a"] { fill: #ff8a5c; }
-:root[data-theme="night"] .patch [fill="#e0b44a"] { fill: #f00000; }
-:root[data-theme="night"] .patch [stroke="#0f1b26"] { stroke: #000000; }
-:root[data-theme="night"] .patch [stroke="#e8ebee"] { stroke: #ff5040; }
-:root[data-theme="night"] .patch [stroke="#45e08a"] { stroke: #ff8a5c; }
-:root[data-theme="night"] .patch [stroke="#e0b44a"] { stroke: #f00000; }
