@@ -20,6 +20,11 @@ let W = 0, H = 0, s = 1, colors = {};
 function readColors() {
   const cs = getComputedStyle(document.documentElement);
   for (const k of ['fg', 'muted', 'line', 'accent', 'card']) colors[k] = cs.getPropertyValue(`--${k}`).trim();
+  // Gold plating isn't a site colour, so pick a lighter or darker gold from the card's brightness.
+  const hex = colors.card.replace('#', '');
+  const dark = hex.length >= 6 && parseInt(hex.slice(0, 2), 16) + parseInt(hex.slice(2, 4), 16) + parseInt(hex.slice(4, 6), 16) < 3 * 96;
+  colors.gold = dark ? '#8f7333' : '#e4c473';
+  colors.goldShade = dark ? '#5f4c22' : '#c39a45';
 }
 readColors();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
@@ -110,7 +115,7 @@ function capsule(a, b, w) {
   ctx.strokeStyle = colors.fg;
   ctx.lineWidth = w + 3;
   ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-  ctx.strokeStyle = colors.card;
+  ctx.strokeStyle = colors.gold;
   ctx.lineWidth = w;
   ctx.stroke();
   // Panel seams across the link.
@@ -189,46 +194,97 @@ function roundRect(x0, y0, x1, y1, r) {
   ctx.roundRect(ax, ay, bx - ax, by - ay, r * s);
 }
 
-// A simple droid torso, facing +x, with the shoulder at the world origin.
-function drawDroid() {
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = colors.fg;
-
-  ctx.fillStyle = colors.card;
-  roundRect(-0.29, FLOOR_Y, 0.0, -0.63, 0.02); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = colors.line;
-  roundRect(-0.22, -0.63, -0.07, -0.55, 0.01); ctx.fill(); ctx.stroke();
-
-  const [hx, hy] = toScreen([-0.145, 0.075]);
-  ctx.fillStyle = colors.card;
-  ctx.beginPath(); ctx.arc(hx, hy, 0.085 * s, Math.PI, 2 * Math.PI); ctx.closePath(); ctx.fill(); ctx.stroke();
-  const [ex, ey] = toScreen([-0.095, 0.115]);
-  ctx.fillStyle = colors.fg;
-  ctx.beginPath(); ctx.arc(ex, ey, 0.012 * s, 0, 2 * Math.PI); ctx.fill();
-
-  ctx.fillStyle = colors.card;
-  roundRect(-0.27, -0.55, -0.02, 0.08, 0.035); ctx.fill(); ctx.stroke();
-
-  ctx.strokeStyle = colors.muted;
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
+// A humanoid protocol droid in profile, facing +x, with the arm's shoulder at the world origin.
+function poly(pts) {
   ctx.beginPath();
-  for (let i = 0; i < 4; i++) {
-    const [ax, ay] = toScreen([-0.22, -0.30 - i * 0.04]), [bx] = toScreen([-0.08, 0]);
-    ctx.moveTo(ax, ay); ctx.lineTo(bx, ay);
+  pts.forEach((p, i) => (i ? ctx.lineTo(...toScreen(p)) : ctx.moveTo(...toScreen(p))));
+  ctx.closePath();
+}
+function limb(a, b, wPx, fill) {
+  const [ax, ay] = toScreen(a), [bx, by] = toScreen(b);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = colors.fg; ctx.lineWidth = wPx + 3;
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  ctx.strokeStyle = fill; ctx.lineWidth = wPx;
+  ctx.stroke();
+}
+function disc(p, r, fill, stroke = colors.fg, lw = 1.5) {
+  const [x, y] = toScreen(p);
+  ctx.beginPath(); ctx.arc(x, y, r * s, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+function drawDroid() {
+  ctx.lineJoin = 'round';
+  const lw = 0.05 * s;
+
+  // Far leg first, in shade, then the near leg in front.
+  limb([-0.06, -0.36], [-0.05, -0.53], lw * 0.9, colors.goldShade);
+  limb([-0.05, -0.53], [-0.08, -0.665], lw * 0.8, colors.goldShade);
+  ctx.fillStyle = colors.goldShade; ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.5;
+  roundRect(-0.11, FLOOR_Y, 0.02, -0.67, 0.012); ctx.fill(); ctx.stroke();
+
+  // Midriff: dark backing with exposed wiring between chest and pelvis.
+  ctx.fillStyle = colors.line;
+  poly([[-0.165, -0.22], [-0.03, -0.22], [-0.04, -0.31], [-0.155, -0.31]]); ctx.fill(); ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.strokeStyle = colors.muted; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (const x of [-0.14, -0.115, -0.09, -0.065]) {
+    const [ax, ay] = toScreen([x, -0.225]), [bx, by] = toScreen([x + 0.01, -0.305]);
+    ctx.moveTo(ax, ay); ctx.quadraticCurveTo(ax + 0.012 * s, (ay + by) / 2, bx, by);
   }
   ctx.stroke();
-  ctx.strokeStyle = colors.line;
-  ctx.lineWidth = 1.2;
-  roundRect(-0.23, -0.20, -0.09, -0.10, 0.01); ctx.stroke();
-  const [lx, ly] = toScreen([-0.205, -0.15]);
-  ctx.fillStyle = colors.accent;
-  ctx.beginPath(); ctx.arc(lx, ly, Math.max(1.5, 0.008 * s), 0, 2 * Math.PI); ctx.fill();
 
+  // Pelvis.
+  ctx.fillStyle = colors.gold; ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.5;
+  roundRect(-0.165, -0.39, -0.025, -0.3, 0.02); ctx.fill(); ctx.stroke();
+
+  // Near leg: thigh, knee hub, shin, foot.
+  limb([-0.1, -0.37], [-0.08, -0.53], lw, colors.gold);
+  limb([-0.08, -0.53], [-0.105, -0.665], lw * 0.88, colors.gold);
+  disc([-0.08, -0.53], 0.022, colors.goldShade);
+  ctx.fillStyle = colors.gold; ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.5;
+  roundRect(-0.14, FLOOR_Y, -0.01, -0.668, 0.012); ctx.fill(); ctx.stroke();
+
+  // Chest plate: broad at the shoulders, tapering to the waist, with a curved panel line.
+  ctx.fillStyle = colors.gold;
+  poly([[-0.165, 0.075], [-0.04, 0.075], [-0.005, 0.04], [0.015, -0.03], [0.0, -0.12], [-0.03, -0.225], [-0.165, -0.225], [-0.2, -0.12], [-0.205, -0.01], [-0.19, 0.05]]);
+  ctx.fill(); ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = colors.goldShade; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const pl = [[-0.17, 0.035], [-0.05, 0.035], [-0.02, -0.04], [-0.045, -0.15], [-0.15, -0.15]].map(toScreen);
+  ctx.moveTo(...pl[0]); for (const q of pl.slice(1)) ctx.lineTo(...q);
+  ctx.stroke();
+  disc([-0.06, -0.08], 0.014, colors.line, colors.fg, 1.2);
+  disc([-0.06, -0.08], 0.005, colors.accent, null);
+
+  // Ribbed neck.
   ctx.fillStyle = colors.line;
-  ctx.strokeStyle = colors.fg;
-  ctx.lineWidth = 1.5;
-  roundRect(-0.075, -0.06, 0.035, 0.06, 0.03); ctx.fill(); ctx.stroke();
+  roundRect(-0.115, 0.07, -0.07, 0.115, 0.006); ctx.fill(); ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.strokeStyle = colors.muted; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const y of [0.082, 0.093, 0.104]) { const [ax, ay] = toScreen([-0.115, y]), [bx] = toScreen([-0.07, y]); ctx.moveTo(ax, ay); ctx.lineTo(bx, ay); }
+  ctx.stroke();
+
+  // Head in profile: rounded crown, a slight muzzle at the front, eye, brow, mouth slit, side disc.
+  ctx.fillStyle = colors.gold;
+  ctx.beginPath();
+  const [hx, hy] = toScreen([-0.09, 0.175]);
+  ctx.ellipse(hx, hy, 0.062 * s, 0.068 * s, 0, 0, 2 * Math.PI);
+  ctx.fill(); ctx.strokeStyle = colors.fg; ctx.lineWidth = 1.5; ctx.stroke();
+  poly([[-0.06, 0.155], [-0.022, 0.15], [-0.02, 0.125], [-0.04, 0.112], [-0.075, 0.115]]);
+  ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = colors.goldShade; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(...toScreen([-0.085, 0.208])); ctx.quadraticCurveTo(...toScreen([-0.05, 0.215]), ...toScreen([-0.03, 0.197])); ctx.stroke();
+  disc([-0.045, 0.183], 0.016, colors.fg, colors.fg, 1);
+  disc([-0.045, 0.183], 0.011, colors.accent, null);
+  ctx.fillStyle = colors.fg;
+  roundRect(-0.045, 0.126, -0.026, 0.134, 0.003); ctx.fill();
+  disc([-0.1, 0.172], 0.022, colors.goldShade, colors.fg, 1.2);
+  disc([-0.1, 0.172], 0.008, colors.line, colors.fg, 1);
+
+  // Shoulder cap, under the arm's first hub.
+  disc([0, 0], 0.045, colors.goldShade, colors.fg, 1.5);
 }
 
 function drawFloor() {
