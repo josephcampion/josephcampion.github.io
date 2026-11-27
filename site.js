@@ -217,6 +217,15 @@ if (matchMedia('(hover: hover)').matches) {
   }
 }
 
+document.querySelectorAll('.reveal').forEach((b) => b.addEventListener('click', () => {
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  b.setAttribute('aria-pressed', on);
+  b.setAttribute('aria-label', on ? 'Zoom back in' : 'Zoom out');
+  const cap = b.nextElementSibling;
+  cap.querySelector('.hint').hidden = on;
+  cap.querySelector('.cap').hidden = !on;
+}));
+
 // Telemetry-style stamp. The page's Last-Modified date (set by GitHub Pages at deploy) shows at once;
 // the latest commit from GitHub's API replaces it with the exact build when it answers.
 const footer = document.querySelector('.site-footer .footer-meta');
