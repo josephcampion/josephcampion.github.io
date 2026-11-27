@@ -124,7 +124,7 @@ h4 { font-size: 1.05rem; }
   flex: none;
   width: 1.6rem;
   height: 1.6rem;
-  rotate: var(--wobble, 0deg);
+  transform: rotate(var(--wobble, 0deg));
 }
 .site-name::before {
   border: 2px solid currentColor;
