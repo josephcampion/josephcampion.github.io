@@ -36,7 +36,7 @@
   <div class="wrap">
     <p class="kicker">Mini demo · Manipulator kinematics &amp; control</p>
     <h1>Droid Arm Reach</h1>
-    <p class="lede">Click (or tap, or drag) anywhere and the droid’s arm plans a smooth, straight reach to it. Hover to preview the pose. Leave it alone and it runs through a few reaches on its own.</p>
+    <p class="lede">Click (or click &amp; drag) anywhere and C-3PO’s arm will follow a smooth, straight trajectory to reach it. Hover to see a preview of the pose. Don’t touch anything and C-3PO will plan and follow a few poses by himself.</p>
   </div>
 
   <div class="sim-stage">
@@ -46,14 +46,14 @@
   <div class="wrap">
     <section class="section">
       <h2>What you’re looking at</h2>
-      <p>Touch your nose. Now do it again with your elbow pointing a different way. You can, because your arm has more joints than it needs to put your finger somewhere. Roboticists call that <em>redundancy</em>. It’s handy, but it means the robot has to choose a pose, every instant, on its own.</p>
-      <p>This droid’s arm has three joints (shoulder, elbow and wrist), but its hand only cares about two things: left–right and up–down. Every click runs three small problems back to back:</p>
+      <p>A robotic arm usually cares about where it needs to go in Cartesian space, otherwise known as “up–down, left–right, forward–back” space. But robotic joints are commanded to specific motor angles. The mapping between those two domains is half the battle in manipulator dynamics and control.</p>
+      <p>In this case, C-3PO’s arm has three joints (shoulder, elbow and wrist), but its hand only cares about two things: left–right and up–down. Every click runs three small problems back to back:</p>
       <ul>
-        <li><strong>Plan.</strong> Draw a straight line to the goal and decide how fast to move along it. The hand speeds up and slows down smoothly, the way yours does when you reach for a cup.</li>
+        <li><strong>Plan.</strong> Draw a straight line to the goal and decide how fast to move along it. The hand speeds up and slows down smoothly, to lower the time and effort to get there, and to avoid crashing into the object it’s grabbing.</li>
         <li><strong>Pick the joints.</strong> At each instant, work out what the joints must do to keep the hand on that line. The spare joint goes toward keeping the arm in a relaxed pose.</li>
         <li><strong>Push.</strong> Work out how hard each motor has to push, accounting for gravity and for the way swinging one link yanks on the others.</li>
       </ul>
-      <p>The hard part is the edge of its reach. With the arm nearly straight, no joint can move the hand any farther out, and the naive math asks the motors for infinite speed. The arm has to see that coming and give up a little accuracy instead of flailing.</p>
+      <p>The hard part is the edge of its reach limit. With the arm nearly straight, no joint can move the hand any farther out, and the naive math asks the motors for infinite speed. The arm has to see that coming and give up a little accuracy instead of flailing.</p>
 
       <h3>Things to try</h3>
       <ul>
@@ -66,7 +66,6 @@
     <section class="section">
       <h2>Where I’ve done this for real</h2>
       <p>At RE2 Robotics I did controls for robotic arms built for everywhere except the factory floor: aviation, energy, medicine and defense. That meant controllers, trajectory planners and visual servoing for 6- and 7-joint arms in 3D. Same ingredients as this one, just with more joints and one more dimension. This is the flat, textbook version.</p>
-      <p>Back in school, at Stanford’s CHARM Lab, I programmed the inverse dynamics for a 2D haptic pantograph. More on that on the <a href="/school">School</a> page.</p>
     </section>
 
     <section class="section">
