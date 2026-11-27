@@ -6,8 +6,8 @@ const H_TOP_KM = 26;
 const STAR_COUNT = 260;
 const M_AXIS = 4.2;
 const M_MIN = 0.6, M_MAX = 4.0;
-const IDLE_MS = 20000;
 const F_AXIS = 300e3;         // N, top of the thrust chart
+const DRAG_DASH = [9, 3, 2, 3];  // dash-dot, unlike any thrust line
 
 const canvas = document.getElementById('sim');
 const ctx = canvas.getContext('2d');
@@ -55,23 +55,44 @@ const guidance = new ClimbGuidance();
 const hold = new MachHold();
 const veh = new Vehicle({ M: 0.8, h: guidance.altitudeFor(0.8) });
 
-// Full-power thrust and 1 g drag along the climb schedule, fixed, so they're computed once.
-const curves = [];
-for (let M = 0.05; M <= M_AXIS + 1e-9; M += 0.05) {
-  const atm = atmosphere(guidance.altitudeFor(Math.max(M, 0.3)));
-  curves.push({
-    M,
-    dry: prop.turbojet(atm, M, prop.dry).F,
-    ab: prop.turbojet(atm, M, 1).F,
-    rj: prop.ramjet(atm, M, 1).F,
-    total: prop.evaluate(atm, M, 1).F,
-    drag: M >= 0.3 ? veh.drag(atm, M * atm.a) : null,
-  });
+// Full-power thrust and 1 g drag versus Mach, either along the climb schedule (altitude rises
+// with Mach) or at one fixed altitude. The ramjet-alone curve starts where the door starts to
+// open: the ideal cycle overstates what a real ramjet makes below that.
+function computeCurves(hFixed = null) {
+  const out = [];
+  for (let M = 0.05; M <= M_AXIS + 1e-9; M += 0.05) {
+    const atm = atmosphere(hFixed ?? guidance.altitudeFor(Math.max(M, 0.3)));
+    out.push({
+      M,
+      dry: prop.turbojet(atm, M, prop.dry).F,
+      ab: prop.turbojet(atm, M, 1).F,
+      rj: M >= prop.M_ON ? prop.ramjet(atm, M, 1).F : null,
+      total: prop.evaluate(atm, M, 1).F,
+      drag: M >= 0.3 ? veh.drag(atm, M * atm.a) : null,
+    });
+  }
+  return out;
 }
+
+const climbCurves = computeCurves();
+let chartMode = 'climb';
+let fixedCurves = null, fixedH = null;
+
+// Fixed-altitude curves follow the ship, recomputed only when it has moved by half a kilometre.
+function activeCurves() {
+  if (chartMode === 'climb') return climbCurves;
+  const h = Math.round(veh.h / 500) * 500;
+  if (h !== fixedH) { fixedH = h; fixedCurves = computeCurves(h); }
+  return fixedCurves;
+}
+
+document.querySelectorAll('[data-chart]').forEach((b) => b.addEventListener('click', () => {
+  chartMode = b.dataset.chart;
+  document.querySelectorAll('[data-chart]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+}));
 
 let Mcmd = 0.8;
 let hoverX = null;
-let lastAction = performance.now() - IDLE_MS + 3000;
 let state = { M: 0.8, e: prop.evaluate(atmosphere(veh.h), 0.8, 0.3), hCmd: veh.h };
 let fuelUsed = 0, flow = 0;
 
@@ -91,7 +112,6 @@ function moveStars(dt) {
 canvas.addEventListener('pointermove', (ev) => { hoverX = ev.pointerType === 'mouse' ? ev.offsetX : null; });
 canvas.addEventListener('pointerleave', () => { hoverX = null; });
 canvas.addEventListener('pointerdown', (ev) => {
-  lastAction = performance.now();
   Mcmd = Math.min(M_MAX, Math.max(M_MIN, xToMach(ev.offsetX)));
 });
 
@@ -102,11 +122,6 @@ function frame(now) {
   const frameDt = Math.min((now - last) / 1000, 0.1);
   acc += frameDt * TIME_WARP;
   last = now;
-
-  if (now - lastAction > IDLE_MS && Math.abs(state.M - Mcmd) < 0.05) {
-    lastAction = now;
-    Mcmd = state.M < 2 ? 3.8 : 0.9;
-  }
 
   while (acc >= DT) {
     const atm = atmosphere(veh.h);
@@ -138,87 +153,99 @@ function panelFrame(P) {
   ctx.stroke();
 }
 
-// An original light freighter seen from behind: a flat lifting disc with a center spine,
-// canopy and twin canted fins. Its stacked exhausts match the engine diagram: the round
-// turbojet nozzle above, the wide ramjet slot below.
+// The freighter in a high chase view, from above and behind. Its deck, mandibles and cockpit
+// tube lie in one plane foreshortened by K, and the centre rises on a sloped ramp. Its exhausts
+// match the engine diagram: the turbojet nozzle above, the long ramjet slot along the rear rim.
+const NOZZLE_DARK = '#14171b';  // a nozzle's insides are dark in either theme
+const WALL_Y = 0.065;           // the hull's lower edge sits this far (× w) below the deck's
 function drawShip(x, y, w, now) {
   const { e } = state;
+  const K = 0.35;
+  const line = (lw = 1.4, c = colors.fg) => { ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.stroke(); };
   ctx.save();
   ctx.translate(x, y);
+  ctx.lineJoin = 'round';
 
-  const hull = () => { ctx.beginPath(); ctx.ellipse(0, 0, 0.5 * w, 0.1 * w, 0, 0, 2 * Math.PI); };
-  ctx.fillStyle = colors.card;
-  ctx.strokeStyle = colors.fg;
-  ctx.lineWidth = 1.4;
-  hull(); ctx.fill();
-
-  // Underside in shadow, panel seams, and a raised rim.
-  ctx.save();
-  hull(); ctx.clip();
-  ctx.fillStyle = colors.line;
-  ctx.fillRect(-0.5 * w, 0.015 * w, w, 0.1 * w);
-  ctx.strokeStyle = colors.muted;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (const f of [-0.36, -0.22, 0.22, 0.36]) { ctx.moveTo(f * w, -0.1 * w); ctx.lineTo(f * 1.08 * w, 0.1 * w); }
-  ctx.moveTo(-0.5 * w, 0.015 * w); ctx.lineTo(0.5 * w, 0.015 * w);
-  ctx.stroke();
+  // Mandibles and cockpit tube: a top face plus a strip of side wall below it.
+  const flat = (pts, wall) => {
+    const P = pts.map(([px, py]) => [px * w, py * w]);
+    ctx.fillStyle = colors.line;
+    ctx.beginPath(); P.forEach(([px, py], i) => (i ? ctx.lineTo(px, py + wall * w) : ctx.moveTo(px, py + wall * w))); ctx.closePath(); ctx.fill(); line(1.2);
+    ctx.fillStyle = colors.card;
+    ctx.beginPath(); P.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.closePath(); ctx.fill(); line();
+  };
+  for (const sg of [-1, 1]) flat([[sg * 0.045, -0.15], [sg * 0.045, -0.27], [sg * 0.13, -0.27], [sg * 0.17, -0.24], [sg * 0.2, -0.14]], 0.022);
+  flat([[0.33, -0.08], [0.41, -0.19], [0.47, -0.2], [0.5, -0.17], [0.44, -0.04]], 0.04);
+  ctx.save(); ctx.translate(0.465 * w, -0.183 * w); ctx.rotate(-0.4);
+  ctx.fillStyle = colors.muted;
+  ctx.beginPath(); ctx.ellipse(0, 0, 0.03 * w, 0.014 * w, 0, 0, 2 * Math.PI); ctx.fill();
   ctx.restore();
-  ctx.strokeStyle = colors.fg;
-  ctx.lineWidth = 1.4;
-  hull(); ctx.stroke();
 
-  // Twin fins, canted outward.
-  ctx.fillStyle = colors.card;
-  for (const s of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(s * 0.24 * w, -0.06 * w);
-    ctx.lineTo(s * 0.33 * w, -0.2 * w);
-    ctx.lineTo(s * 0.36 * w, -0.2 * w);
-    ctx.lineTo(s * 0.32 * w, -0.045 * w);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+  // Hull side wall, then the deck with its radial seams and greeble.
+  ctx.fillStyle = colors.line;
+  ctx.beginPath(); ctx.ellipse(0, WALL_Y * w, 0.48 * w, 0.17 * w, 0, 0, 2 * Math.PI); ctx.fill(); line();
+  const deck = () => { ctx.beginPath(); ctx.ellipse(0, -0.01 * w, 0.48 * w, 0.17 * w, 0, 0, 2 * Math.PI); };
+  ctx.fillStyle = colors.card; deck(); ctx.fill();
+  ctx.save(); deck(); ctx.clip();
+  ctx.beginPath();
+  for (let i = 0; i < 12; i++) { const a = (i / 12) * 2 * Math.PI; ctx.moveTo(0, -0.01 * w); ctx.lineTo(Math.cos(a) * 0.5 * w, -0.01 * w + Math.sin(a) * 0.18 * w); }
+  line(1, colors.line);
+  ctx.fillStyle = colors.line;
+  for (const [gx, gy, gw, gh] of [[-0.38, -0.02, 0.07, 0.03], [-0.3, 0.06, 0.06, 0.03], [0.22, 0.05, 0.08, 0.03], [0.32, -0.03, 0.05, 0.025]]) ctx.fillRect(gx * w, gy * w, gw * w, gh * w);
+  ctx.restore();
+  deck(); line();
+
+  // Raised centre: the ramp's outline is the base ellipse's near half joined to the top's far half.
+  const r0 = 0.3, r1 = 0.19, y0 = -0.01, y1 = y0 - 0.055;
+  ctx.beginPath();
+  ctx.ellipse(0, y0 * w, r0 * w, r0 * K * w, 0, 0, Math.PI);
+  ctx.ellipse(0, y1 * w, r1 * w, r1 * K * w, 0, Math.PI, 2 * Math.PI);
+  ctx.closePath();
+  ctx.fillStyle = colors.line; ctx.fill(); line(1.2);
+  ctx.beginPath();
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * 2 * Math.PI;
+    if (Math.sin(a) < -0.2) continue;
+    ctx.moveTo(Math.cos(a) * r0 * w, (y0 + Math.sin(a) * r0 * K) * w);
+    ctx.lineTo(Math.cos(a) * r1 * w, (y1 + Math.sin(a) * r1 * K) * w);
   }
-
-  // Spine and canopy.
-  ctx.beginPath();
-  ctx.moveTo(-0.15 * w, -0.06 * w);
-  ctx.quadraticCurveTo(-0.13 * w, -0.17 * w, 0, -0.18 * w);
-  ctx.quadraticCurveTo(0.13 * w, -0.17 * w, 0.15 * w, -0.06 * w);
-  ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = colors.muted;
-  ctx.beginPath(); ctx.ellipse(0, -0.145 * w, 0.06 * w, 0.022 * w, 0, Math.PI, 2 * Math.PI); ctx.stroke();
-
-  // Engine block.
+  line(1, colors.muted);
   ctx.fillStyle = colors.card;
-  ctx.strokeStyle = colors.fg;
-  ctx.beginPath();
-  ctx.roundRect(-0.14 * w, -0.085 * w, 0.28 * w, 0.17 * w, 0.03 * w);
-  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, y1 * w, r1 * w, r1 * K * w, 0, 0, 2 * Math.PI); ctx.fill(); line(1.2);
 
-  // Exhaust glow: layered discs, sized and brightened by each engine's thrust.
+  // Turret on top, dish on its mast.
+  const ty = y1 + 0.01;
+  ctx.beginPath(); ctx.ellipse(0.01 * w, (ty - 0.01) * w, 0.06 * w, 0.03 * w, 0, 0, 2 * Math.PI); ctx.fill(); line(1.2);
+  ctx.beginPath(); for (const dx of [-0.015, 0.015]) { ctx.moveTo((0.01 + dx) * w, (ty - 0.03) * w); ctx.lineTo((0.01 + dx) * w, (ty - 0.08) * w); } line(1.6);
+  ctx.beginPath(); ctx.moveTo(-0.22 * w, -0.06 * w); ctx.lineTo(-0.22 * w, -0.1 * w); line(1.4);
+  ctx.save(); ctx.translate(-0.22 * w, -0.11 * w); ctx.rotate(-0.4);
+  ctx.beginPath(); ctx.ellipse(0, 0, 0.05 * w, 0.022 * w, 0, 0, 2 * Math.PI); ctx.fill(); line(1.2);
+  ctx.restore();
+
+  // Engines: two bars on the rear wall, following its curve, stacked like the diagram with the
+  // turbojet above the ramjet. Dark until lit, then glowing with each engine's thrust.
   const flick = 0.9 + 0.1 * Math.sin(now / 37);
-  const glow = (cx, cy, rx, ry, k) => {
-    ctx.fillStyle = colors.accent;
-    for (const [grow, a] of [[2.6, 0.12], [1.7, 0.25], [1, 0.9]]) {
+  const tjK = e.tj.F / 180e3 * (e.tj.ab ? 1.3 : 1), rjK = e.rj.F / 180e3;
+  const bar = (f, a0, a1, lw, c) => {
+    ctx.beginPath(); ctx.ellipse(0, (-0.01 + f * (WALL_Y + 0.01)) * w, 0.48 * w, 0.17 * w, 0, a0 * Math.PI, a1 * Math.PI);
+    ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke(); ctx.lineCap = 'butt';
+  };
+  const engine = (f, a0, a1, k) => {
+    bar(f, a0, a1, 0.018 * w, NOZZLE_DARK);
+    if (k <= 0.01) return;
+    for (const [g, a] of [[3, 0.12], [1.8, 0.25], [0.8, 0.95]]) {
       ctx.globalAlpha = a * Math.min(1, k);
-      ctx.beginPath(); ctx.ellipse(cx, cy, rx * (1 + (grow - 1) * k * flick), ry * (1 + (grow - 1) * k * flick), 0, 0, 2 * Math.PI); ctx.fill();
+      bar(f, a0, a1, 0.016 * w * (1 + (g - 1) * Math.min(1.5, k) * flick), colors.accent);
     }
     ctx.globalAlpha = 1;
   };
-  const tjK = e.tj.F / 180e3, rjK = e.rj.F / 180e3;
-  ctx.fillStyle = colors.fg;
-  ctx.globalAlpha = 0.8;
-  ctx.beginPath(); ctx.arc(0, -0.025 * w, 0.045 * w, 0, 2 * Math.PI); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(-0.1 * w, 0.035 * w, 0.2 * w, 0.032 * w, 0.01 * w); ctx.fill();
-  ctx.globalAlpha = 1;
-  if (tjK > 0.01) glow(0, -0.025 * w, 0.04 * w, 0.04 * w, tjK * (e.tj.ab ? 1.3 : 1));
-  if (rjK > 0.01) glow(0, 0.051 * w, 0.095 * w, 0.014 * w, rjK);
+  engine(0.33, 0.3, 0.7, tjK);
+  engine(0.75, 0.18, 0.82, rjK);
 
-  // Wingtip lights.
+  // Rim lights.
   if (Math.floor(now / 600) % 2) {
     ctx.fillStyle = colors.accent;
-    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * 0.49 * w, 0, 2, 0, 2 * Math.PI); ctx.fill(); }
+    for (const sg of [-1, 1]) { ctx.beginPath(); ctx.arc(sg * 0.48 * w, WALL_Y * 0.6 * w, 2, 0, 2 * Math.PI); ctx.fill(); }
   }
   ctx.restore();
 }
@@ -420,13 +447,22 @@ function drawEngine(P, now) {
 }
 
 function drawChart(P) {
+  const curves = activeCurves();
+  // Low and fast, the fixed-altitude curves run far past 300 kN, so that view rescales.
+  let top = F_AXIS, step = 100e3;
+  if (chartMode === 'fixed') {
+    const peak = Math.max(...curves.map((c) => Math.max(c.total, c.ab, c.rj ?? 0, c.drag ?? 0)));
+    step = peak > 1500e3 ? 500e3 : peak > 600e3 ? 200e3 : 100e3;
+    top = Math.max(step, Math.ceil(peak / step) * step);
+  }
   const y0 = P.y + 30, y1 = P.y + P.h - 28;
-  const X = machToX, Y = (F) => y1 - (Math.min(F, F_AXIS) / F_AXIS) * (y1 - y0);
+  const X = machToX, Y = (F) => y1 - (Math.min(F, top) / top) * (y1 - y0);
   const x0 = plotX0(), x1 = plotX1();
 
   ctx.font = mono(11);
   ctx.fillStyle = colors.muted;
-  ctx.fillText('full-power thrust along the climb (kN) · click to set target Mach', P.x + 12, P.y + 18);
+  const where = chartMode === 'climb' ? 'along the climb' : `at ${(fixedH / 1000).toFixed(1)} km`;
+  ctx.fillText(`full-power thrust ${where} (kN) · click to set target Mach`, P.x + 12, P.y + 18);
 
   ctx.fillStyle = colors.line;
   ctx.globalAlpha = 0.5;
@@ -436,10 +472,10 @@ function drawChart(P) {
   ctx.strokeStyle = colors.line;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  for (let F = 0; F <= F_AXIS; F += 100e3) { ctx.moveTo(x0, Y(F)); ctx.lineTo(x1, Y(F)); }
+  for (let F = 0; F <= top; F += step) { ctx.moveTo(x0, Y(F)); ctx.lineTo(x1, Y(F)); }
   ctx.stroke();
   ctx.fillStyle = colors.muted;
-  for (let F = 0; F <= F_AXIS; F += 100e3) ctx.fillText(String(F / 1000).padStart(3), P.x + 14, Y(F) + 4);
+  for (let F = 0; F <= top; F += step) ctx.fillText(String(F / 1000).padStart(4), P.x + 8, Y(F) + 4);
   for (let M = 0; M <= 4; M++) ctx.fillText(`M${M}`, X(M) - 8, y1 + 16);
 
   const line = (key, color, width, dash) => {
@@ -460,11 +496,11 @@ function drawChart(P) {
   line('dry', colors.muted, 1, [4, 4]);
   line('ab', colors.muted, 1.2, []);
   line('rj', colors.muted, 1, [1, 3]);
-  line('drag', colors.fg, 1, []);
+  line('drag', colors.fg, 2, DRAG_DASH);
   line('total', colors.accent, 2, []);
 
   // Legend, top right.
-  const items = [['blended', colors.accent, 2, []], ['turbojet + AB', colors.muted, 1.2, []], ['turbojet dry', colors.muted, 1, [4, 4]], ['ramjet alone', colors.muted, 1, [1, 3]], ['drag', colors.fg, 1, []]];
+  const items = [['blended', colors.accent, 2, []], ['turbojet + AB', colors.muted, 1.2, []], ['turbojet dry', colors.muted, 1, [4, 4]], ['ramjet alone', colors.muted, 1, [1, 3]], ['drag', colors.fg, 2, DRAG_DASH]];
   ctx.font = mono(10);
   const lw = 120, lx = x1 - lw, compact = P.h < 170 || W < 420;
   // Short panels keep only the two lines that matter most.

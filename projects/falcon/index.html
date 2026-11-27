@@ -29,11 +29,17 @@
   <div class="wrap">
     <p class="kicker">Mini demo · Propulsion</p>
     <h1>Millennium Falcon: Turbojet to Ramjet</h1>
-    <p class="lede">Click (or tap) anywhere to set a target Mach number; left is slow, right is fast, lined up with the chart along the bottom. The freighter lights its afterburner, climbs as it speeds up, and somewhere past Mach 2 swings a door in its inlet to hand the air from the turbojet to the ramjet. Leave it alone and it flies up to Mach 3.8 and back on its own.</p>
+    <p class="lede">Click (or tap) anywhere to set a target Mach number; left is slow, right is fast, lined up with the chart along the bottom. The freighter lights its afterburner, climbs as it speeds up, and somewhere past Mach 2 swings a door in its inlet to hand the air from the turbojet to the ramjet. It holds whatever Mach you last picked until you click again.</p>
   </div>
 
   <div class="sim-stage">
     <canvas id="sim" aria-label="A freighter accelerates and climbs; an engine diagram shows the inlet door moving air from a turbojet to a ramjet, and a chart shows thrust against Mach number. Clicking sets the target Mach."></canvas>
+    <div class="sim-controls">
+      <div role="group" aria-label="Thrust chart altitude">
+        <button type="button" data-chart="climb" aria-pressed="true">Along the climb</button>
+        <button type="button" data-chart="fixed" aria-pressed="false">At current altitude</button>
+      </div>
+    </div>
   </div>
 
   <div class="wrap">
