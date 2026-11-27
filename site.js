@@ -48,7 +48,6 @@ const commands = [
   ['Pages', 'School', '/school'],
   ['Pages', 'Essays', '/essays/'],
   ['Pages', 'Life', '/life'],
-  ['Pages', 'Reading list', '/reading'],
   ['Pages', 'Resume (PDF)', '/resume.pdf'],
   ['Demos', 'X-Wing Path Following', '/projects/xwing-follow/'],
   ['Demos', 'Death Star Orbit & Attitude', '/projects/death-star-pointing/'],

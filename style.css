@@ -117,17 +117,29 @@ h4 { font-size: 1.05rem; }
   text-transform: uppercase;
   color: var(--fg);
   text-decoration: none;
+  position: relative;
 }
-.site-name::before {
-  content: "JC";
-  display: inline-grid;
-  place-items: center;
+.site-name::before, .site-name::after {
+  content: "";
+  flex: none;
   width: 1.6rem;
   height: 1.6rem;
+  rotate: var(--wobble, 0deg);
+}
+.site-name::before {
   border: 2px solid currentColor;
   border-radius: 0.4rem;
-  font: 700 0.66rem/1 var(--mono);
-  letter-spacing: 0.02em;
+}
+/* The letters are SF Distant Galaxy outlines saved as an SVG; its freeware license forbids
+   shipping a modified (subset) font, so the badge masks the drawing instead of using the font. */
+.site-name::after {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  margin-top: -0.8rem;
+  background: currentColor;
+  -webkit-mask: url("/images/jc-letters.svg") center / 50% auto no-repeat;
+  mask: url("/images/jc-letters.svg") center / 50% auto no-repeat;
 }
 .site-header nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; font: 0.85rem/1.6 var(--mono); }
 .site-header nav a { color: var(--muted); text-decoration: none; }
@@ -235,12 +247,10 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 }
 .site-footer .links { margin: 0; }
 .site-footer p { margin: 0; }
-.footer-pages { font-size: 0.8rem; }
-.footer-meta { text-align: right; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.footer-meta { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .site-footer .telemetry { opacity: 0.8; }
 @media (max-width: 40rem) {
   .site-footer .wrap { grid-template-columns: 1fr; gap: 0.6rem; }
-  .footer-meta { text-align: left; }
 }
 
 .meta .tag { display: inline-block; padding: 0 0.4rem; border: 1px solid var(--line); border-radius: 3px; font-size: 0.72rem; text-transform: uppercase; }
@@ -263,7 +273,6 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 .cards--fit { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
 .home .section:first-child { border-top: 0; }
 
-.site-name::before { rotate: var(--wobble, 0deg); }
 
 .palette-btn { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted); }
 .palette-btn:hover { color: var(--fg); }
@@ -301,6 +310,12 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
   border-radius: 4px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   font-size: 0.85rem;
+.hero .wrap.has-bode { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); gap: 1.5rem 3rem; align-items: center; }
+.hero-bode { margin: 0; }
+.hero-bode canvas { width: 100%; height: 15rem; background: var(--card); border: 1px solid var(--line); border-radius: 6px; touch-action: pan-y; }
+.bode-readout { margin-top: 0.4rem; font: 0.75rem/1.4 var(--mono); letter-spacing: 0.04em; color: var(--muted); }
+@media (max-width: 48rem) { .hero .wrap.has-bode { grid-template-columns: minmax(0, 1fr); } .hero-bode canvas { height: 11rem; } }
+
   line-height: 1.5;
   pointer-events: none;
 }
@@ -310,14 +325,20 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 .preview-title { font-weight: 700; }
 .preview-text { color: var(--muted); margin-top: 0.2rem !important; }
 
-.hero .wrap.has-bode { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); gap: 1.5rem 3rem; align-items: center; }
-.hero-bode { margin: 0; }
-.hero-bode canvas { width: 100%; height: 15rem; background: var(--card); border: 1px solid var(--line); border-radius: 6px; touch-action: pan-y; }
-.bode-readout { margin-top: 0.4rem; font: 0.75rem/1.4 var(--mono); letter-spacing: 0.04em; color: var(--muted); }
-@media (max-width: 48rem) { .hero .wrap.has-bode { grid-template-columns: minmax(0, 1fr); } .hero-bode canvas { height: 11rem; } }
-
 .books { list-style: none; padding: 0 !important; }
 .books li { margin: 0 0 1.1rem; }
 .books cite { font-style: normal; font-weight: 700; }
 .books .meta { display: block; margin: 0.1rem 0 0; }
 .books p { margin: 0.2rem 0 0; }
+
+/* Night Ops repaints the demo patches; CSS beats the SVGs' presentation attributes, so the patch markup keeps its normal colors. */
+:root[data-theme="night"] .patch [fill="#0f1b26"] { fill: #000000; }
+:root[data-theme="night"] .patch [fill="#14232f"] { fill: #0e0000; }
+:root[data-theme="night"] .patch [fill="#24313d"] { fill: #3a0000; }
+:root[data-theme="night"] .patch [fill="#e8ebee"] { fill: #ff5040; }
+:root[data-theme="night"] .patch [fill="#45e08a"] { fill: #ff8a5c; }
+:root[data-theme="night"] .patch [fill="#e0b44a"] { fill: #f00000; }
+:root[data-theme="night"] .patch [stroke="#0f1b26"] { stroke: #000000; }
+:root[data-theme="night"] .patch [stroke="#e8ebee"] { stroke: #ff5040; }
+:root[data-theme="night"] .patch [stroke="#45e08a"] { stroke: #ff8a5c; }
+:root[data-theme="night"] .patch [stroke="#e0b44a"] { stroke: #f00000; }
