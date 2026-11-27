@@ -36,10 +36,10 @@ export class Arm {
   constructor({
     l = L, m = MASS, lc = l.map((v) => v / 2), I = m.map((mi, i) => (mi * l[i] ** 2) / 12),
     qMin = [-135 * DEG, 0, -90 * DEG], qMax = [135 * DEG, 150 * DEG, 90 * DEG],
-    tauMax = [20, 8, 1.5], b = 0.05, g = 9.81, q = [-40 * DEG, 80 * DEG, -20 * DEG], qd,
+    tauMax = [20, 8, 1.5], b = 0.05, fc = [0, 0, 0], Tm = 0, g = 9.81, q = [-40 * DEG, 80 * DEG, -20 * DEG], qd,
   } = {}) {
     const n = l.length;
-    Object.assign(this, { n, l, m, lc, I, qMin, qMax, tauMax, b, g });
+    Object.assign(this, { n, l, m, lc, I, qMin, qMax, tauMax, b, fc, Tm, g });
     this.q = [...q];
     this.qd = qd ? [...qd] : new Array(n).fill(0);
     this.tau = new Array(n).fill(0);
@@ -127,13 +127,17 @@ export class Arm {
     return h;
   }
 
-  // Semi-implicit Euler. Friction b is in the plant only, so the controller never sees it.
+  // Semi-implicit Euler. The motor torque lags its command by Tm (the current loop), saturates, and
+  // fights viscous (b) and Coulomb (fc) friction; tanh smooths the Coulomb sign through zero speed.
   step(tauCmd, dt) {
     const { n, q, qd } = this;
     this.sat = tauCmd.map((t, i) => Math.abs(t) > this.tauMax[i]);
-    this.tau = tauCmd.map((t, i) => clamp(t, -this.tauMax[i], this.tauMax[i]));
+    const cmd = tauCmd.map((t, i) => clamp(t, -this.tauMax[i], this.tauMax[i]));
+    const a = this.Tm > 0 ? Math.min(1, dt / this.Tm) : 1;
+    this.tau = cmd.map((t, i) => this.tau[i] + a * (t - this.tau[i]));
     const h = this.bias(q, qd);
-    const qdd = solve(this.massMatrix(q), this.tau.map((t, i) => t - this.b * qd[i] - h[i]));
+    const fr = qd.map((w, i) => this.b * w + this.fc[i] * Math.tanh(w / 0.02));
+    const qdd = solve(this.massMatrix(q), this.tau.map((t, i) => t - fr[i] - h[i]));
     for (let i = 0; i < n; i++) {
       qd[i] += qdd[i] * dt;
       q[i] += qd[i] * dt;
@@ -252,7 +256,7 @@ export class CartesianPlanner {
 export const KEEP_OUT = [
   { x0: -1, x1: -0.04, y0: -0.08, y1: 0.10, exits: 'rt' },
   { x0: -1, x1: 0.14, y0: -1, y1: -0.08, exits: 'r' },
-  { x0: -0.25, x1: -0.05, y0: 0.10, y1: 0.19, exits: 'lrt' },
+  { x0: -0.25, x1: 0.11, y0: 0.10, y1: 0.36, exits: 'lrt' },
 ];
 
 export function clampGoal(p, { rMin = 0.20, rMax = 0.62, yMin = -0.60, keepOut = KEEP_OUT, margin = 0.01 } = {}) {
@@ -273,14 +277,35 @@ export function clampGoal(p, { rMin = 0.20, rMax = 0.62, yMin = -0.60, keepOut =
   return { p: [x, y], clamped: Math.hypot(x - p[0], y - p[1]) > 1e-9 };
 }
 
-export class ComputedTorque {
-  constructor({ Kp = 400, Kd = 40 } = {}) {
-    Object.assign(this, { Kp, Kd });
+// Joint encoders: angles quantised to `bits` per turn, rates from a first-order filtered derivative.
+export class Encoders {
+  constructor(arm, { bits = 16, Tf = 0.004 } = {}) {
+    this.res = (2 * Math.PI) / 2 ** bits;
+    this.Tf = Tf;
+    this.q = arm.q.map((v) => this.quantise(v));
+    this.qd = new Array(arm.n).fill(0);
   }
 
-  update(arm, qRef, qdRef, qddRef) {
-    const u = qRef.map((r, i) => qddRef[i] + this.Kd * (qdRef[i] - arm.qd[i]) + this.Kp * (r - arm.q[i]));
-    const M = arm.massMatrix(arm.q), h = arm.bias(arm.q, arm.qd);
+  quantise(v) { return Math.round(v / this.res) * this.res; }
+
+  read(arm, dt) {
+    const q = arm.q.map((v) => this.quantise(v));
+    const a = dt / (this.Tf + dt);
+    this.qd = this.qd.map((w, i) => w + a * ((q[i] - this.q[i]) / dt - w));
+    this.q = q;
+    return { q, qd: this.qd };
+  }
+}
+
+// Computed torque from the controller's own model of the arm, fed by measured (not true) joint states.
+export class ComputedTorque {
+  constructor({ Kp = 400, Kd = 40, model = new Arm() } = {}) {
+    Object.assign(this, { Kp, Kd, model });
+  }
+
+  update(meas, qRef, qdRef, qddRef) {
+    const u = qRef.map((r, i) => qddRef[i] + this.Kd * (qdRef[i] - meas.qd[i]) + this.Kp * (r - meas.q[i]));
+    const M = this.model.massMatrix(meas.q), h = this.model.bias(meas.q, meas.qd);
     return M.map((row, i) => dot(row, u) + h[i]);
   }
 }
@@ -292,6 +317,7 @@ export class ReachTask {
     this.dls = { lambda0, w0, k0, qRest };
     this.planner = new CartesianPlanner(traj);
     this.ctl = new ComputedTorque(ctl);
+    this.enc = new Encoders(arm);
     this.qr = [...arm.q];
     this.qrd = new Array(arm.n).fill(0);
     this.qrdd = new Array(arm.n).fill(0);
@@ -331,9 +357,10 @@ export class ReachTask {
     this.qrd = qrd;
     this.qr = qr;
 
-    arm.step(this.ctl.update(arm, this.qr, this.qrd, this.qrdd), dt);
+    arm.step(this.ctl.update(this.enc.read(arm, dt), this.qr, this.qrd, this.qrdd), dt);
     const p = arm.fk().p;
     const e = [d.p[0] - p[0], d.p[1] - p[1]];
-    return { mode: this.mode, pd: d.p, p, err: Math.hypot(...e), e, w: r.w, lambda: r.lambda, tau: arm.tau, sat: arm.sat };
+    const eq = this.qr.map((r, j) => r - arm.q[j]);
+    return { mode: this.mode, pd: d.p, p, err: Math.hypot(...e), e, eq, w: r.w, lambda: r.lambda, tau: arm.tau, sat: arm.sat };
   }
 }

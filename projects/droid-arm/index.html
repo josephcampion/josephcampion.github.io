@@ -59,7 +59,7 @@
       <ul>
         <li>Click near the edge of the reach and watch λ on the readout climb as the arm straightens. That’s the arm trading accuracy for sane motor speeds.</li>
         <li>Drag the goal around mid-reach. The path bends smoothly instead of jerking onto a new line.</li>
-        <li>Watch the error chart during a long reach. The hand drifts a few millimetres off the line, because the joints have friction the controller doesn’t know about, then settles back.</li>
+        <li>Watch the error charts during a long reach. The joints lag their reference and the hand drifts several millimetres off the line, then settles, but not quite to zero: the real arm is heavier than the controller thinks, so it sags a little at rest.</li>
       </ul>
     </section>
 
@@ -90,12 +90,19 @@
       <p>With the arm stretched straight, every joint can only move the hand sideways, so no joint rates can move it outward: J loses rank, and a plain inverse asks for infinite speed. The damping λ trades a little accuracy for bounded rates. It only switches on near that pose, ramping in as the manipulability w = √det(JJᵀ) drops below a threshold, so it costs nothing elsewhere; watch λ on the readout when the arm reaches far. Because there are three joints for two coordinates, a whole family of poses puts the hand in the same spot. The second term picks one by gently pulling the joints toward a relaxed posture, only in directions that don’t move the hand. Joint limits keep the elbow bending one way, and a joint that hits its limit is locked while the others take up the motion.</p>
 
       <h3>Dynamics &amp; control</h3>
-      <p>The arm is a real rigid-body simulation: each link has mass and inertia, gravity pulls on all of them, and swinging one joint throws the others around. Computed-torque control uses that same model to cancel the arm’s own dynamics, so each joint error behaves like a simple, critically damped spring:</p>
+      <p>The arm is a real rigid-body simulation: each link has mass and inertia, gravity pulls on all of them, and swinging one joint throws the others around. Computed-torque control uses a model of those dynamics to cancel them, so that, if the model were right, each joint error would behave like a simple, critically damped spring:</p>
       <p class="eq">M(q) q̈ + h(q, q̇) = τ, &nbsp; τ = M(q̈<sub>d</sub> + K<sub>d</sub>ė + K<sub>p</sub>e) + h &nbsp;⟹&nbsp; ë + K<sub>d</sub>ė + K<sub>p</sub>e = 0</p>
-      <p>Here M is the mass matrix, h collects gravity and the Coriolis and centrifugal terms, and e = q<sub>d</sub> − q. If the model were perfect and the motors unlimited, the error would stay at zero. It doesn’t quite: each joint has a little friction that the controller doesn’t know about, and each motor has a torque limit. The bars show how close each joint is to its limit, and the chart shows the hand error, a few millimetres while moving that settles back toward zero at rest.</p>
+      <p>Here M is the mass matrix, h collects gravity and the Coriolis and centrifugal terms, and e = q<sub>d</sub> − q. With a perfect model, perfect sensors and ideal motors, the error would stay at zero. This arm is built so it doesn’t, the way a real one wouldn’t:</p>
+      <ul>
+        <li><strong>The model is off.</strong> The real links are 7–12% heavier than the controller thinks, the hand most of all, so gravity is under-cancelled and the arm sags a little. With no integral term, that sag never quite goes away.</li>
+        <li><strong>Unmodelled friction.</strong> Each joint has viscous friction and Coulomb (dry) friction that the controller doesn’t know about. The dry friction makes the joints stick slightly as they come to rest.</li>
+        <li><strong>Motors aren’t instant.</strong> Each motor’s torque follows its command with a 6 ms lag, standing in for the current loop, and saturates at its limit.</li>
+        <li><strong>Sensors aren’t perfect.</strong> The controller only sees 16-bit joint encoders, and it estimates joint rates by differentiating them through a 4 ms filter.</li>
+      </ul>
+      <p>The bars show how close each joint’s torque is to its limit. The charts show the joint errors (reference minus actual) and the hand error: up to several millimetres mid-reach, settling to a millimetre or two of sag at rest.</p>
 
       <h3>Numbers</h3>
-      <p>Links (shoulder, elbow, wrist): l = 0.30, 0.25, 0.10 m; m = 1.5, 1.0, 0.4 kg, with the centre of mass mid-link and I = ml²/12. Torque limits 20, 8 and 1.5 N·m. Joint limits: shoulder ±135°, elbow 0–150°, wrist ±90°. Friction 0.05 N·m·s per joint, unmodelled. K<sub>p</sub> = 400 /s², K<sub>d</sub> = 40 /s. IK: K = 20 /s, λ<sub>0</sub> = 0.05, w<sub>0</sub> = 0.06, k<sub>0</sub> = 2 /s, q<sub>rest</sub> = (−40°, 80°, −20°). Trajectory: v<sub>max</sub> = 0.8 m/s, a<sub>max</sub> = 3 m/s², T ≥ 0.4 s. Goals are kept between 0.20 and 0.62 m from the shoulder and out of the droid’s body. The sim runs in real time at 500 Hz.</p>
+      <p>Links (shoulder, elbow, wrist): l = 0.30, 0.25, 0.10 m; m = 1.5, 1.0, 0.4 kg, with the centre of mass mid-link and I = ml²/12. Torque limits 20, 8 and 1.5 N·m. Joint limits: shoulder ±135°, elbow 0–150°, wrist ±90°. Controller’s model: those masses. Real arm: 1.6, 1.08, 0.45 kg, viscous friction 0.05 N·m·s and Coulomb friction 0.10, 0.05, 0.012 N·m per joint, motor lag 6 ms. Encoders: 16 bits per turn, rate filter 4 ms. K<sub>p</sub> = 400 /s², K<sub>d</sub> = 40 /s. IK: K = 20 /s, λ<sub>0</sub> = 0.05, w<sub>0</sub> = 0.06, k<sub>0</sub> = 2 /s, q<sub>rest</sub> = (−40°, 80°, −20°). Trajectory: v<sub>max</sub> = 0.8 m/s, a<sub>max</sub> = 3 m/s², T ≥ 0.4 s. Goals are kept between 0.20 and 0.62 m from the shoulder and out of the droid’s body. The sim runs in real time at 500 Hz.</p>
       <p class="meta">All values are illustrative. References: B. Siciliano, L. Sciavicco, L. Villani &amp; G. Oriolo, <em>Robotics: Modelling, Planning and Control</em>, Springer, 2009; M. Spong, S. Hutchinson &amp; M. Vidyasagar, <em>Robot Modeling and Control</em>; Y. Nakamura &amp; H. Hanafusa, 1986, and C. Wampler, 1986 (damped least squares); T. Flash &amp; N. Hogan, 1985 (minimum jerk).</p>
       </details>
     </section>
