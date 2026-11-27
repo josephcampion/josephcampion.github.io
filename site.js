@@ -26,3 +26,20 @@ if (picker) {
   show();
   picker.hidden = false;
 }
+
+// Telemetry-style stamp. The page's Last-Modified date (set by GitHub Pages at deploy) shows at once;
+// the latest commit from GitHub's API replaces it with the exact build when it answers.
+const footer = document.querySelector('.site-footer .wrap > div');
+if (footer) {
+  const stamp = document.createElement('p');
+  stamp.className = 'telemetry';
+  const show = (date, build) => {
+    stamp.textContent = `LAST UPDATE ${date.toISOString().slice(0, 16).replace('T', ' ')}Z${build ? ` · BUILD ${build}` : ''}`;
+  };
+  const modified = new Date(document.lastModified);
+  if (!Number.isNaN(modified.getTime())) { show(modified); footer.append(stamp); }
+  fetch('https://api.github.com/repos/josephcampion/josephcampion.github.io/commits/main')
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((c) => { show(new Date(c.commit.committer.date), c.sha.slice(0, 7)); if (!stamp.isConnected) footer.append(stamp); })
+    .catch(() => {});
+}

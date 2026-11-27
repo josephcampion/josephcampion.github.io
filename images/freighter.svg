@@ -17,9 +17,9 @@
   <path d="M25.3 36.4 22.6 41.6M38.7 36.4l2.7 5.2M32 36.4v6.2" stroke="#9aa1aa" stroke-width="0.6"/>
   <ellipse cx="59.9" cy="25" rx="1.8" ry="0.8" transform="rotate(-23 59.9 25)" fill="#2b3038"/>
   <g fill="none" stroke-linecap="round">
-    <path d="M48.9 45.1A28.8 10.2 0 0 1 15.1 45.1" stroke="#d9480f" stroke-width="2.6" opacity="0.25"/>
-    <path d="M48.9 45.1A28.8 10.2 0 0 1 15.1 45.1" stroke="#d9480f" stroke-width="1.1"/>
-    <path d="M56.3 44.3A28.8 10.2 0 0 1 7.7 44.3" stroke="#d9480f" stroke-width="2.6" opacity="0.25"/>
-    <path d="M56.3 44.3A28.8 10.2 0 0 1 7.7 44.3" stroke="#d9480f" stroke-width="1.1"/>
+    <path d="M48.9 45.1A28.8 10.2 0 0 1 15.1 45.1" stroke="#13803f" stroke-width="2.6" opacity="0.25"/>
+    <path d="M48.9 45.1A28.8 10.2 0 0 1 15.1 45.1" stroke="#13803f" stroke-width="1.1"/>
+    <path d="M56.3 44.3A28.8 10.2 0 0 1 7.7 44.3" stroke="#13803f" stroke-width="2.6" opacity="0.25"/>
+    <path d="M56.3 44.3A28.8 10.2 0 0 1 7.7 44.3" stroke="#13803f" stroke-width="1.1"/>
   </g>
 </svg>
