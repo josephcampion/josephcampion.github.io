@@ -232,6 +232,12 @@ main.wrap, main > .wrap:first-child { padding-top: 2.5rem; }
 .sim-controls button[aria-pressed="true"] { color: var(--fg); box-shadow: inset 0 -2px var(--accent); }
 .sim-controls .meta { flex-basis: 100%; margin: 0; }
 
+.under-hood > summary { font: 0.9rem var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); cursor: pointer; list-style: none; }
+.under-hood > summary::-webkit-details-marker { display: none; }
+.under-hood > summary::before { content: "▸ "; }
+.under-hood[open] > summary::before { content: "▾ "; }
+.under-hood[open] > summary { margin-bottom: 1rem; }
+
 .eq { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.1rem; text-align: center; margin: 1.25rem 0; overflow-x: auto; }
 
 blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--accent); color: var(--muted); }
@@ -310,12 +316,6 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
   border-radius: 4px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
   font-size: 0.85rem;
-.hero .wrap.has-bode { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem); gap: 1.5rem 3rem; align-items: center; }
-.hero-bode { margin: 0; }
-.hero-bode canvas { width: 100%; height: 15rem; background: var(--card); border: 1px solid var(--line); border-radius: 6px; touch-action: pan-y; }
-.bode-readout { margin-top: 0.4rem; font: 0.75rem/1.4 var(--mono); letter-spacing: 0.04em; color: var(--muted); }
-@media (max-width: 48rem) { .hero .wrap.has-bode { grid-template-columns: minmax(0, 1fr); } .hero-bode canvas { height: 11rem; } }
-
   line-height: 1.5;
   pointer-events: none;
 }

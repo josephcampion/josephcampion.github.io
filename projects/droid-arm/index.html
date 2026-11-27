@@ -45,9 +45,34 @@
 
   <div class="wrap">
     <section class="section">
-      <h2>What’s going on</h2>
+      <h2>What you’re looking at</h2>
+      <p>Touch your nose. Now do it again with your elbow pointing a different way. You can, because your arm has more joints than it needs to put your finger somewhere. Roboticists call that <em>redundancy</em>. It’s handy, but it means the robot has to choose a pose, every instant, on its own.</p>
+      <p>This droid’s arm has three joints (shoulder, elbow and wrist), but its hand only cares about two things: left–right and up–down. Every click runs three small problems back to back:</p>
+      <ul>
+        <li><strong>Plan.</strong> Draw a straight line to the goal and decide how fast to move along it. The hand speeds up and slows down smoothly, the way yours does when you reach for a cup.</li>
+        <li><strong>Pick the joints.</strong> At each instant, work out what the joints must do to keep the hand on that line. The spare joint goes toward keeping the arm in a relaxed pose.</li>
+        <li><strong>Push.</strong> Work out how hard each motor has to push, accounting for gravity and for the way swinging one link yanks on the others.</li>
+      </ul>
+      <p>The hard part is the edge of its reach. With the arm nearly straight, no joint can move the hand any farther out, and the naive math asks the motors for infinite speed. The arm has to see that coming and give up a little accuracy instead of flailing.</p>
+
+      <h3>Things to try</h3>
+      <ul>
+        <li>Click near the edge of the reach and watch λ on the readout climb as the arm straightens. That’s the arm trading accuracy for sane motor speeds.</li>
+        <li>Drag the goal around mid-reach. The path bends smoothly instead of jerking onto a new line.</li>
+        <li>Watch the error chart during a long reach. The hand drifts a few millimetres off the line, because the joints have friction the controller doesn’t know about, then settles back.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Where I’ve done this for real</h2>
+      <p>At RE2 Robotics I did controls for robotic arms built for everywhere except the factory floor: aviation, energy, medicine and defense. That meant controllers, trajectory planners and visual servoing for 6- and 7-joint arms in 3D. Same ingredients as this one, just with more joints and one more dimension. This is the flat, textbook version.</p>
+      <p>Back in school, at Stanford’s CHARM Lab, I programmed the inverse dynamics for a 2D haptic pantograph. More on that on the <a href="/school">School</a> page.</p>
+    </section>
+
+    <section class="section">
+      <details class="under-hood">
+      <summary>Under the hood: the math</summary>
       <p>A droid’s arm, seen from the side with gravity pulling down, has three joints: shoulder, elbow and wrist. Its hand only has two coordinates to hit (x and y), so there’s one joint more than it needs. Each click runs the whole chain: plan a path for the hand, turn it into joint angles, then work out the joint torques that make the arm follow it.</p>
-      <p>At RE2 I worked on this for 6- and 7-DOF arms in 3D; this is the planar textbook version.</p>
 
       <h3>Forward kinematics &amp; the Jacobian</h3>
       <p>Write φ<sub>i</sub> = q<sub>1</sub> + … + q<sub>i</sub> for the absolute angle of link i. The hand is the sum of the links laid end to end, and the Jacobian, which maps joint rates to hand velocity, comes straight from differentiating that sum:</p>
@@ -72,6 +97,7 @@
       <h3>Numbers</h3>
       <p>Links (shoulder, elbow, wrist): l = 0.30, 0.25, 0.10 m; m = 1.5, 1.0, 0.4 kg, with the centre of mass mid-link and I = ml²/12. Torque limits 20, 8 and 1.5 N·m. Joint limits: shoulder ±135°, elbow 0–150°, wrist ±90°. Friction 0.05 N·m·s per joint, unmodelled. K<sub>p</sub> = 400 /s², K<sub>d</sub> = 40 /s. IK: K = 20 /s, λ<sub>0</sub> = 0.05, w<sub>0</sub> = 0.06, k<sub>0</sub> = 2 /s, q<sub>rest</sub> = (−40°, 80°, −20°). Trajectory: v<sub>max</sub> = 0.8 m/s, a<sub>max</sub> = 3 m/s², T ≥ 0.4 s. Goals are kept between 0.20 and 0.62 m from the shoulder and out of the droid’s body. The sim runs in real time at 500 Hz.</p>
       <p class="meta">All values are illustrative. References: B. Siciliano, L. Sciavicco, L. Villani &amp; G. Oriolo, <em>Robotics: Modelling, Planning and Control</em>, Springer, 2009; M. Spong, S. Hutchinson &amp; M. Vidyasagar, <em>Robot Modeling and Control</em>; Y. Nakamura &amp; H. Hanafusa, 1986, and C. Wampler, 1986 (damped least squares); T. Flash &amp; N. Hogan, 1985 (minimum jerk).</p>
+      </details>
     </section>
   </div>
 </main>

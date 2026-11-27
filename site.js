@@ -38,7 +38,6 @@ if (picker) {
 
 const loadScript = (src) => document.head.append(Object.assign(document.createElement('script'), { src }));
 loadScript('/kalman.js');
-if (document.querySelector('main.home .hero')) loadScript('/bode.js');
 
 // Command palette, opened with ⌘K / Ctrl+K or the key-cap button in the header.
 const commands = [

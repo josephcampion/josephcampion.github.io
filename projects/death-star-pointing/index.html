@@ -45,7 +45,28 @@
 
   <div class="wrap">
     <section class="section">
-      <h2>What’s going on</h2>
+      <h2>What you’re looking at</h2>
+      <p>In space there’s nothing to push against: no road, no air. To go somewhere you point your engine and burn, and to point the engine you have to turn the whole station first. So this demo is two problems stacked on top of each other: where the Death Star is going (its <em>orbit</em>) and which way it’s facing (its <em>attitude</em>).</p>
+      <p><strong>Changing orbits.</strong> The weird part is that you don’t aim at the orbit you want. To go higher, you speed up along your path, which stretches the far side of your orbit outward. Coast halfway around to that far side, then speed up again to round it off. That’s a <em>Hohmann transfer</em>, the cheapest way between two circular orbits. You speed up twice and end up going slower, because higher orbits are slower. Orbits are weird.</p>
+      <p><strong>Turning.</strong> The station turns by spinning a heavy wheel inside it the other way, the same trick as sitting on an office chair and spinning a bike wheel you’re holding. The catch: a small outside push (exaggerated here) keeps nudging the station, and the wheel has to spin a little faster every second to cancel it. Eventually it’s near top speed. So every so often, small thrusters on the rim fire to slow the wheel back down while the station holds still. That’s called <em>momentum dumping</em>.</p>
+
+      <h3>Things to try</h3>
+      <ul>
+        <li>Hover before you click. It previews the new orbit and the ideal cost, in Δv (how much speed change the burns add up to).</li>
+        <li>Drop to a low orbit and compare “Δv” with “ideal” on the readout. Real burns take time instead of happening instantly, so they always cost a bit more.</li>
+        <li>Watch the wheel momentum bar fill up, then drain when the rim thrusters kick in (the mode shows DESAT). The pointing barely moves while it happens.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Where I’ve done this for real</h2>
+      <p>At Astrobotic I worked on Peregrine, a lunar lander that launched on ULA’s Vulcan Centaur. I wrote the sensor interfaces for a navigation flight test and analyzed Monte Carlo landing simulations, which means running the same landing over and over with everything slightly randomized to see how often it goes wrong.</p>
+      <p>Attitude has followed me around since school. My estimation final project was a tumbling satellite that works out which way it’s facing using only the stars (more on the <a href="/school">School</a> page). Another tumbling satellite lives on this site’s <a href="/404">404 page</a>.</p>
+    </section>
+
+    <section class="section">
+      <details class="under-hood">
+      <summary>Under the hood: the math</summary>
       <p>Two things are simulated together, in 2D: where the Death Star is (its orbit, x and y) and which way it’s facing (its attitude, θ). Thrust only pushes along the dish axis, so the attitude has to be right before the orbit can change.</p>
 
       <h3>Orbit</h3>
@@ -69,6 +90,7 @@
       <h3>Numbers</h3>
       <p>μ = 4.6 × 10⁶ km³/s² (picked so a 3000 km orbit takes 8 minutes), planet radius 1000 km, engine 0.8 km/s². Attitude: J = 10 kg·m², J<sub>w</sub> = 0.002 kg·m², u<sub>max</sub> = 0.1 N·m, Ω<sub>max</sub> = 6000 rpm, ω<sub>max</sub> = 3°/s, k<sub>θ</sub> = 0.15 /s, k<sub>ω</sub> = 0.6 /s, k<sub>I</sub> = 0.01 /s², τ<sub>dist</sub> = 8 mN·m, desaturation thrusters 30 mN·m. The sim runs at 100 Hz and twelve times faster than real time. The station isn’t drawn to scale.</p>
       <p class="meta">All values are illustrative. The attitude numbers are sized for a small satellite; a moon-sized battle station would need a much bigger wheel. References: B. Wie, <em>Space Vehicle Dynamics and Control</em>, 2nd ed., AIAA, 2008; H. Curtis, <em>Orbital Mechanics for Engineering Students</em>.</p>
+      </details>
     </section>
   </div>
 </main>

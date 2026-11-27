@@ -53,7 +53,34 @@
 
   <div class="wrap">
     <section class="section">
-      <h2>What’s going on</h2>
+      <h2>What you’re looking at</h2>
+      <p>You can’t fly an airplane like a mouse cursor. It can’t stop, it can’t slow down much, and the only way to turn is to bank and carve an arc. So “fly to these points” really means “draw a path through them that the plane can actually fly, then stay on it.”</p>
+      <p>That splits into two layers. The bottom one is <em>path following</em>: given a line or a circle, stay on it, and steer back gently when you drift off. The top one is the <em>path manager</em>: turn the list of waypoints into lines and circles, and decide when to move on to the next one.</p>
+      <p>The three buttons are three ways to handle the corners:</p>
+      <ul>
+        <li><strong>Line.</strong> Aim straight at each waypoint. Simple, but every corner is sharper than the X-wing can turn, so it overshoots and swings back.</li>
+        <li><strong>Fillet.</strong> Round each corner off with an arc it can fly. Smooth and short, but it never quite passes through the waypoints.</li>
+        <li><strong>Dubins.</strong> Give each waypoint a heading too, then find the shortest turn–straight–turn path between them. For something with a minimum turn radius, that’s provably the shortest way there.</li>
+      </ul>
+
+      <h3>Things to try</h3>
+      <ul>
+        <li>Flip between Line, Fillet and Dubins on the same loop and watch what happens at the corners.</li>
+        <li>On Fillet, put two waypoints close together. The arc shrinks to fit, ends up tighter than the X-wing can turn, and it overshoots anyway.</li>
+        <li>Watch the short orange tick. It’s a finish line: the X-wing moves on as soon as it crosses, even if it missed the waypoint, instead of circling back for it.</li>
+        <li>Hit Clear and move your cursor around. From far away it flies a straight line at you; up close it settles into a circle around the cursor.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Where I’ve done this for real</h2>
+      <p>The autopilot underneath this X-wing is a two-line toy. Real ones are most of my job. At Anduril I work on Altius, a tube-launched fixed-wing drone, and so far that’s meant the autopilot, the target state estimator, and system identification for the 6DOF sim. Before that, at Hermeus, I developed the flight controls and navigation for Quarterhorse Mk 2.1, a supersonic drone the size of an F-16.</p>
+      <p>Everything on this page comes from Beard &amp; McLain’s <em>Small Unmanned Aircraft</em>, chapters 10 and 11. In school, my optimal control final project compared motion planners for a pursuit-evasion game, a cousin of this problem: deciding where a vehicle should go, not just how to get it there. More on the <a href="/school">School</a> page.</p>
+    </section>
+
+    <section class="section">
+      <details class="under-hood">
+      <summary>Under the hood: the math</summary>
       <p>The X-wing is a kinematic model: constant airspeed <i>V<sub>a</sub></i>, and it can only change course by banking. A course loop commands a bank angle, and a second-order roll loop (with a roll-rate limit) chases it:</p>
       <p class="eq">φ<sub>c</sub> = sat(k<sub>χ</sub>(χ<sub>c</sub> − χ)), &nbsp; χ̇ = (g / V<sub>a</sub>) tan φ</p>
       <p>Seen from above, banking foreshortens the wings, which is why the X-wing looks narrower in a turn.</p>
@@ -69,8 +96,7 @@
       <p class="eq">χ<sub>c</sub> = φ + λ (π/2 + tan<sup>−1</sup>(k<sub>orbit</sub> (ρ − R) / R))</p>
       <p>It enters the orbit inside 2<i>R</i> and only leaves past 4<i>R</i>, so a cursor hovering near the boundary doesn’t make it flip back and forth.</p>
 
-    <section class="section">
-      <h2>Waypoint paths</h2>
+      <h3>Waypoint paths</h3>
       <p>Chapter 11 adds a path manager on top. It turns a list of waypoints <b>w</b><sub>1</sub>, …, <b>w</b><sub>N</sub> into a sequence of lines and orbits, and hands the current one to the followers above. Here the list wraps around, so the X-wing loops forever. On the canvas the planned path is dashed, the piece being flown is solid, and the short orange tick is the line it has to cross to move on.</p>
 
       <h3>Half-plane switching</h3>
@@ -97,6 +123,7 @@
       <h3>Numbers</h3>
       <p>V<sub>a</sub> = 25 m/s, R = 120 m (for orbits, fillets and Dubins turns), χ<sub>∞</sub> = 70°, k<sub>path</sub> = 0.02, k<sub>orbit</sub> = 5, φ<sub>max</sub> = 35°, roll loop ω<sub>n</sub> = 3 rad/s and ζ = 0.7. The tightest turn at full bank is V<sub>a</sub><sup>2</sup> / (g tan φ<sub>max</sub>) ≈ 91 m, so R leaves some margin. There are up to 8 waypoints, and tapping within 60 m of one removes it. The sim runs at 100 Hz and four times faster than real time.</p>
       <p class="meta">Reference: R. W. Beard and T. W. McLain, <em>Small Unmanned Aircraft: Theory and Practice</em>, Princeton University Press, 2012, ch. 10 (path following) and ch. 11 (path manager: half-plane transitions, fillets and Dubins paths).</p>
+      </details>
     </section>
   </div>
 </main>
