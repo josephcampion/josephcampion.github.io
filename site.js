@@ -64,7 +64,6 @@ const commands = [
   ['Fun', 'Freighter flyby  (hidden on the Work page)', () => window.fun?.flyby()],
   ['Fun', 'Droid whirl  (hidden on the Work page)', () => window.fun?.droid()],
   ['Fun', 'X-wing vs TIE  (or click 5 empty spots)', () => window.fun?.xwingVsTie()],
-  ['Fun', 'Sonic boom  (or scroll really fast)', () => window.fun?.boom()],
   ['Fun', 'Barrel roll  (or type "barrel roll")', () => window.fun?.barrelRoll()],
   ['Fun', 'Zero-g  (or the Konami code)', () => window.fun?.zeroG()],
   ...(touch ? [] : [['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()]]),

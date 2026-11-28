@@ -1,5 +1,5 @@
 // Page easter eggs: a barrel roll (that isn't), Konami-code zero-g with a detumble controller,
-// and a sonic boom when you scroll fast enough.
+// and the badge launch.
 (() => {
   const { reduced, toast, overlay, onSequence } = window.fun;
 
@@ -80,12 +80,6 @@
     requestAnimationFrame(tick);
   };
 
-  // Sonic boom: the viewport is the vehicle and scroll speed is its airspeed. "Speed of sound" is a
-  // hand-tuned page speed, not a physical one. It has to be held for a few scroll events so a jump
-  // (End key, anchor link) doesn't count.
-  const A_SOUND = 6000;           // px/s
-  const HOLD = 3;                 // consecutive scroll events above A_SOUND
-  const COOLDOWN = 10000;         // ms
   // Two N-waves, one from the bow shock and one from the tail.
   const shake = () => {
     if (reduced.matches) return;
@@ -94,43 +88,6 @@
       { duration: 420, easing: 'linear' },
     );
   };
-  const boom = (dir = 1) => {
-    toast('MACH 1.0');
-    shake();
-    const start = performance.now() / 1000;
-    const ov = overlay();
-    ov.run((t) => {
-      const age = t - start;
-      if (age > 0.8) return false;
-      const { ctx, colors } = ov;
-      const W = innerWidth, H = innerHeight;
-      // A bow shock: apex at the leading edge, wings swept back toward the trailing edge.
-      const apex = dir > 0 ? H - 24 : 24, wing = dir > 0 ? H * 0.55 : H * 0.45;
-      ctx.strokeStyle = colors.accent;
-      for (let i = 0; i < 3; i++) {
-        const a = apex - dir * i * 14, w = wing - dir * i * 14;
-        ctx.globalAlpha = (1 - age / 0.8) * (0.8 - i * 0.25);
-        ctx.lineWidth = 2 - i * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(0, w);
-        ctx.quadraticCurveTo(W / 2, 2 * a - w, W, w);
-        ctx.stroke();
-      }
-    });
-  };
-  let lastY = scrollY, lastT = performance.now(), v = 0, above = 0, quietUntil = 0;
-  addEventListener('scroll', () => {
-    const now = performance.now();
-    const dt = (now - lastT) / 1000;
-    const dy = scrollY - lastY;
-    lastY = scrollY;
-    lastT = now;
-    if (dt <= 0) return;
-    if (dt > 0.2) { v = 0; above = 0; return; }
-    v += (dy / dt - v) * Math.min(1, dt / 0.05);
-    above = Math.abs(v) > A_SOUND ? above + 1 : 0;
-    if (above >= HOLD && now > quietUntil) { quietUntil = now + COOLDOWN; boom(Math.sign(v)); }
-  }, { passive: true });
 
   // Badge launch: countdown, a vertical rise, a small pitch-over kick, then a gravity turn. Thrust
   // stays along the velocity and γ̇ = −g cos γ / V, so gravity alone bends the path over.
@@ -270,5 +227,5 @@
   onSequence([...'barrelroll'], barrelRoll);
   onSequence(['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'], zeroG);
 
-  Object.assign(window.fun, { barrelRoll, zeroG, boom, shake, launchBadge });
+  Object.assign(window.fun, { barrelRoll, zeroG, shake, launchBadge });
 })();
