@@ -1,13 +1,18 @@
 // Easter egg: press "k" and a constant-velocity Kalman filter tracks a noisy version of your cursor.
+// Pressing "k" again steps the process noise Q (trust the model, balanced, trust the sensor), then turns it off.
 (() => {
   const SIGMA = 18;             // px, measurement noise
   const R = SIGMA * SIGMA;
-  // White-acceleration spectral density (px²/s³). Hand movements accelerate hard, so this is large;
-  // smaller values smooth more but lag visibly behind a fast flick.
-  const Q = 3e5;
   const MEAS_DT = 1 / 15;
+  // White-acceleration spectral density Q (px²/s³). Only Q/R matters: in steady state the filter is a
+  // second-order low-pass with ωn = (Q / (R·Δt))^¼ and ζ = √2/2 whatever Q is. Each step is 100× Q.
+  const MODES = [[3e3, 'TRUSTS THE MODEL'], [3e5, 'BALANCED'], [3e7, 'TRUSTS THE SENSOR']];
+  const wn = (q) => Math.round((q / (R * MEAS_DT)) ** 0.25);
+  let mode = 0, Q = MODES[0][0];
+  try { mode = Math.min(MODES.length - 1, +sessionStorage.getItem('kalmanMode') || 0); Q = MODES[mode][0]; } catch {}
+  const saveMode = () => { try { sessionStorage.setItem('kalmanMode', String(mode)); } catch {} };
   const MARK_LIFE = 1;          // s
-  const COAST = 0.6;            // s of prediction after the pointer leaves; 2σ has grown to ~300 px by then
+  const COAST = 0.6;            // s of prediction after the pointer leaves; at the balanced Q, 2σ has grown to ~300 px by then
   const FADE = 0.4;             // s
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -99,7 +104,7 @@
     ctx.globalAlpha = alpha * 0.75;
     ctx.fillStyle = colors.muted;
     ctx.font = '10px "B612 Mono", ui-monospace, monospace';
-    ctx.fillText(`x\u0302  2\u03c3=${Math.round(2 * Math.max(sx, sy))}px`, fx.p + 2 * sx + 6, fy.p - 2 * sy - 4);
+    ctx.fillText(`x\u0302  \u03c9n ${wn(Q)}  2\u03c3=${Math.round(2 * Math.max(sx, sy))}px`, fx.p + 2 * sx + 6, fy.p - 2 * sy - 4);
     ctx.globalAlpha = 1;
   };
 
@@ -109,5 +114,13 @@
     global: 'kalmanCursor',
     frame,
     reset: () => { fx = fy = null; marks = []; trail = []; },
+    onKey: ({ on, off, enabled }) => {
+      if (!enabled) { mode = 0; on(true); }
+      else if (mode < MODES.length - 1) mode++;
+      else { off(); saveMode(); return; }
+      Q = MODES[mode][0];
+      saveMode();
+      window.fun.toast(`KALMAN CURSOR \u2014 \u03c9n \u2248 ${wn(Q)} rad/s, ${MODES[mode][1]} \u2014 k to step`);
+    },
   });
 })();

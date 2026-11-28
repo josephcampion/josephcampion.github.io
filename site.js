@@ -68,7 +68,7 @@ const commands = [
   ...(touch ? [] : [
     ['Fun', 'Barrel roll: type "barrel roll"'],
     ['Fun', 'Zero-g: \u2191\u2191\u2193\u2193\u2190\u2192\u2190\u2192 B A'],
-    ['Fun', 'Kalman-filter cursor: press K'],
+    ['Fun', 'Kalman-filter cursor: press K, again to change Q/R'],
     ['Fun', 'PID drone: press P, again to change damping'],
   ]),
   ['Theme', 'Auto', () => setTheme('auto')],
