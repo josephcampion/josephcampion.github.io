@@ -251,12 +251,6 @@ document.addEventListener('click', (e) => {
   if (clicks.length === 5) xwingVsTie(clicks.splice(0));
 });
 
-// From the command menu there are no clicks, so make a loose loop of five.
-const randomWaypoints = () => Array.from({ length: 5 }, (_, k) => {
-  const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5 + (Math.random() - 0.5) * 0.6;
-  return { x: innerWidth * (0.5 + 0.32 * Math.cos(a)), y: innerHeight * (0.5 + 0.3 * Math.sin(a)) };
-});
-
 // ── Freighter flyby ────────────────────────────────────────────────────────────────────────────
 const MACH = 3;
 let flying = false;
@@ -450,5 +444,3 @@ document.addEventListener('click', (e) => {
   if (egg.dataset.egg === 'flyby') flyby(r.top + r.height / 2);
   else if (egg.dataset.egg === 'droid') droid();
 });
-
-Object.assign(window.fun ??= {}, { xwingVsTie: (pts) => xwingVsTie(pts ?? randomWaypoints()), flyby: () => flyby(), droid });

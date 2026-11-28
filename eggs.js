@@ -227,5 +227,5 @@
   onSequence([...'barrelroll'], barrelRoll);
   onSequence(['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'], zeroG);
 
-  Object.assign(window.fun, { barrelRoll, zeroG, shake, launchBadge });
+  Object.assign(window.fun, { shake, launchBadge });
 })();

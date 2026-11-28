@@ -43,7 +43,8 @@ const loadScript = (src, type = 'text/javascript') => document.head.append(Objec
 for (const src of ['/fun.js', ...(touch ? [] : ['/kalman.js', '/pid.js']), '/eggs.js']) loadScript(src);
 loadScript('/flybys.js', 'module');
 
-// Command palette, opened with ⌘K / Ctrl+K or the key-cap button in the header.
+// Command palette, opened with ⌘K / Ctrl+K or the key-cap button in the header. Fun rows are hints
+// with no action: each egg has its own trigger, and finding it is the point.
 const commands = [
   ['Pages', 'Home', '/'],
   ['Pages', 'Work', '/work'],
@@ -60,14 +61,16 @@ const commands = [
   ['Essays', 'Hogwarts Pedagogy', '/essays/hogwarts-pedagogy'],
   ['Essays', 'Droids vs. Jedi', '/essays/droids-vs-jedis'],
   ['Essays', 'Blue Pill Suicide', '/essays/blue-pill-suicide'],
-  ['Fun', 'Launch the badge  (or click it 10\u00d7 on Home)', () => window.fun?.launchBadge()],
-  ['Fun', 'Freighter flyby  (hidden on the Work page)', () => window.fun?.flyby()],
-  ['Fun', 'Droid whirl  (hidden on the Work page)', () => window.fun?.droid()],
-  ['Fun', 'X-wing vs TIE  (or click 5 empty spots)', () => window.fun?.xwingVsTie()],
-  ['Fun', 'Barrel roll  (or type "barrel roll")', () => window.fun?.barrelRoll()],
-  ['Fun', 'Zero-g  (or the Konami code)', () => window.fun?.zeroG()],
-  ...(touch ? [] : [['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()]]),
-  ...(touch ? [] : [['Fun', 'PID drone: step damping  [P]', () => window.pidDrone?.press()]]),
+  ['Fun', 'Badge launch: click the JC badge on Home 10\u00d7 fast'],
+  ['Fun', 'Freighter flyby: click the dotted "Mach 3 conditions" on Work'],
+  ['Fun', 'Droid whirl: click the dotted "robotic arms" on Work'],
+  ['Fun', 'X-wing vs TIE: click 5 empty spots fast'],
+  ...(touch ? [] : [
+    ['Fun', 'Barrel roll: type "barrel roll"'],
+    ['Fun', 'Zero-g: \u2191\u2191\u2193\u2193\u2190\u2192\u2190\u2192 B A'],
+    ['Fun', 'Kalman-filter cursor: press K'],
+    ['Fun', 'PID drone: press P, again to change damping'],
+  ]),
   ['Theme', 'Auto', () => setTheme('auto')],
   ['Theme', 'Day', () => setTheme('light')],
   ['Theme', 'HUD (green on dark)', () => setTheme('dark')],
@@ -95,10 +98,11 @@ if (header && window.HTMLDialogElement) {
     const q = input.value.trim().toLowerCase().replace(/\s+/g, '');
     shown = commands.filter(([g, label]) => matches(q, g + label));
     sel = Math.min(sel, Math.max(shown.length - 1, 0));
-    list.replaceChildren(...shown.map(([g, label], i) => {
+    list.replaceChildren(...shown.map(([g, label, action], i) => {
       const li = document.createElement('li');
       li.role = 'option';
       li.id = `palette-${i}`;
+      if (!action) li.className = 'hint';
       li.setAttribute('aria-selected', i === sel);
       li.innerHTML = '<span class="palette-group"></span><span></span>';
       li.firstChild.textContent = g;

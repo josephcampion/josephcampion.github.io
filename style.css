@@ -325,6 +325,8 @@ blockquote { margin: 1.5rem 0; padding-left: 1rem; border-left: 3px solid var(--
 .palette li { display: flex; gap: 1rem; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.9rem; }
 .palette li[aria-selected="true"] { background: var(--bg); box-shadow: inset 3px 0 var(--accent); }
 .palette li[aria-selected="true"]::after { content: "◂"; margin-left: auto; color: var(--accent); }
+.palette li.hint { cursor: default; color: var(--muted); }
+.palette li.hint::after { content: none; }
 .palette-group { flex: 0 0 4.5rem; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.6rem; }
 .palette-foot { margin: 0; padding: 0.6rem 1rem; border-top: 1px solid var(--line); color: var(--muted); letter-spacing: 0.06em; }
 
