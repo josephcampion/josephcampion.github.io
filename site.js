@@ -80,7 +80,7 @@ const commands = [
 const header = document.querySelector('.site-header nav');
 if (header && window.HTMLDialogElement) {
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
-  // Phones and tablets have no ⌘K, so they get a tappable prompt glyph instead of the key cap.
+  // Phones and tablets have no ⌘K, so they get a search icon instead of the key cap.
   const dlg = document.createElement('dialog');
   dlg.className = 'palette';
   dlg.innerHTML = '<label class="palette-prompt"><span aria-hidden="true">&gt;</span><input type="text" placeholder="Go to a page or run a command" aria-label="Command" autocomplete="off" spellcheck="false" role="combobox" aria-controls="palette-list" aria-expanded="true"></label><ul id="palette-list" role="listbox"></ul><p class="palette-foot"></p>';
@@ -139,7 +139,7 @@ if (header && window.HTMLDialogElement) {
   btn.type = 'button';
   btn.className = 'palette-btn';
   btn.setAttribute('aria-label', 'Open command menu');
-  btn.innerHTML = touch ? '<kbd>&gt;_</kbd>' : `<kbd>${isMac ? '⌘' : 'Ctrl '}K</kbd>`;
+  btn.innerHTML = touch ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>' : `<kbd>${isMac ? '⌘' : 'Ctrl '}K</kbd>`;
   btn.addEventListener('click', open);
   header.append(btn);
 }
