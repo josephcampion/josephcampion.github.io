@@ -36,9 +36,11 @@ if (picker) {
   picker.hidden = false;
 }
 
+// Phones and tablets have no hovering pointer, so the cursor toys (Kalman, PID) are left out there.
+const touch = matchMedia('(hover: none)').matches;
 // async = false keeps injected scripts in insertion order; the eggs need fun.js first.
 const loadScript = (src, type = 'text/javascript') => document.head.append(Object.assign(document.createElement('script'), { src, type, async: false }));
-for (const src of ['/fun.js', '/kalman.js', '/pid.js', '/eggs.js']) loadScript(src);
+for (const src of ['/fun.js', ...(touch ? [] : ['/kalman.js', '/pid.js']), '/eggs.js']) loadScript(src);
 loadScript('/flybys.js', 'module');
 
 // Command palette, opened with ⌘K / Ctrl+K or the key-cap button in the header.
@@ -57,11 +59,11 @@ const commands = [
   ['Fun', 'X-wing vs TIE  (or click 5 empty spots)', () => window.fun?.xwingVsTie()],
   ['Demos', 'Death Star Orbit & Attitude', '/projects/death-star-pointing/'],
   ['Demos', 'Droid Arm Reach', '/projects/droid-arm/'],
-  ['Fun', 'PID drone: step damping  [P]', () => window.pidDrone?.press()],
+  ...(touch ? [] : [['Fun', 'PID drone: step damping  [P]', () => window.pidDrone?.press()]]),
   ['Demos', 'Millennium Falcon: Turbojet to Ramjet', '/projects/falcon/'],
   ['Fun', 'Sonic boom  (or scroll really fast)', () => window.fun?.boom()],
   ['Demos', 'Tumbling satellite (the 404 page)', '/lost-in-space'],
-  ['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()],
+  ...(touch ? [] : [['Fun', 'Toggle Kalman-filter cursor  [K]', () => window.kalmanCursor?.toggle()]]),
   ['Essays', 'Hogwarts Pedagogy', '/essays/hogwarts-pedagogy'],
   ['Essays', 'Droids vs. Jedi', '/essays/droids-vs-jedis'],
   ['Essays', 'Blue Pill Suicide', '/essays/blue-pill-suicide'],
@@ -79,7 +81,6 @@ const header = document.querySelector('.site-header nav');
 if (header && window.HTMLDialogElement) {
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
   // Phones and tablets have no ⌘K, so they get a tappable prompt glyph instead of the key cap.
-  const touch = matchMedia('(hover: none)').matches;
   const dlg = document.createElement('dialog');
   dlg.className = 'palette';
   dlg.innerHTML = '<label class="palette-prompt"><span aria-hidden="true">&gt;</span><input type="text" placeholder="Go to a page or run a command" aria-label="Command" autocomplete="off" spellcheck="false" role="combobox" aria-controls="palette-list" aria-expanded="true"></label><ul id="palette-list" role="listbox"></ul><p class="palette-foot"></p>';
