@@ -30,7 +30,7 @@
   const overlay = () => {
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483000;';
+    canvas.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:2147483000;';
     document.body.append(canvas);
     const ctx = canvas.getContext('2d');
     const colors = readColors();
@@ -39,6 +39,10 @@
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(innerWidth * dpr);
       canvas.height = Math.round(innerHeight * dpr);
+      // Sized in px from innerHeight, not 100vh: on iOS 100vh is the height with the toolbars hidden,
+      // which stretches the canvas and pushes anything drawn near the bottom under Safari's toolbar.
+      canvas.style.width = `${innerWidth}px`;
+      canvas.style.height = `${innerHeight}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     const scheme = matchMedia('(prefers-color-scheme: dark)');
