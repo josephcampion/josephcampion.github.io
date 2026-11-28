@@ -352,6 +352,8 @@ function flyby(y = innerHeight * 0.4) {
 // s³ + (b/l − c)s² + ((a − g)/l)s + gc/l to (s + p)³ gives the gains below. c > 0 is the
 // non-minimum-phase signature: to speed up, the wheel first rolls *backward* to tip the body forward.
 const G = 9.81, ARM = 0.45, POLE = 4, U_MAX = 20, WHEEL_R = 0.11, CRUISE = 3;
+// Metres of roll-out per m/s at the moment the stop is commanded; measured from this loop (2.15 m from 3 m/s).
+const BRAKE = 0.72;
 const KC = (POLE ** 3 * ARM) / G, KA = G + 3 * POLE * POLE * ARM, KB = ARM * (3 * POLE + KC);
 let rolling = false;
 
@@ -403,7 +405,7 @@ function droid() {
   if (reduced.matches) { toast('DROID SKIPPED — reduced motion is on'); return; }
   rolling = true;
   const W = innerWidth;
-  const s = clamp(innerHeight / 7, 80, 130);     // px per metre
+  const s = clamp(Math.min(innerHeight, W) / 7, 60, 130);     // px per metre
   const x0 = 80 / s;
   let x = x0, v = 0, th = 0, om = 0, roll = 0, ref = 0, look = 0, stage = 'wait', stageT = 0;
   toast('NON-MINIMUM PHASE: IT BACKS UP TO LEAN FORWARD');
@@ -421,7 +423,7 @@ function droid() {
     for (let k = 0; k < 10; k++) step(dt / 10);
     stageT += dt;
     if (stage === 'wait' && stageT > 0.5) go('go', CRUISE);
-    else if (stage === 'go' && x * s > W * 0.5) go('stop', 0);
+    else if (stage === 'go' && (x + BRAKE * v) * s > W * 0.5) go('stop', 0);
     else if (stage === 'stop' && stageT > 1.2 && Math.abs(v) < 0.05) go('look', 0);
     else if (stage === 'look' && stageT > 1.4) go('leave', CRUISE * 1.5);
     look = clamp(look + (stage === 'look' && stageT < 1 ? 3 : -3) * dt, 0, 1);
